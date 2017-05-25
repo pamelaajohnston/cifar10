@@ -99,8 +99,8 @@ def tower_loss(scope):
     loss_name = re.sub('%s_[0-9]*/' % cifar10.TOWER_NAME, '', l.op.name)
     # Name each loss as '(raw)' and name the moving average version of the loss
     # as the original loss name.
-    tf.summary.scalar(loss_name +' (raw)', l)
-    tf.summary.scalar(loss_name, loss_averages.average(l))
+    tf.scalar_summary(loss_name +' (raw)', l)
+    tf.scalar_summary(loss_name, loss_averages.average(l))
 
   with tf.control_dependencies([loss_averages_op]):
     total_loss = tf.identity(total_loss)
@@ -133,7 +133,7 @@ def average_gradients(tower_grads):
       grads.append(expanded_g)
 
     # Average over the 'tower' dimension.
-    grad = tf.concat(values = grads, axis=0)
+    grad = tf.concat(0, grads)
     grad = tf.reduce_mean(grad, 0)
 
     # Keep in mind that the Variables are redundant because they are shared
@@ -171,47 +171,45 @@ def train():
 
     # Calculate the gradients for each model tower.
     tower_grads = []
-    
-    with tf.variable_scope(tf.get_variable_scope()) as scope:
-        for i in xrange(FLAGS.num_gpus):
-          with tf.device('/gpu:%d' % i):
-            with tf.name_scope('%s_%d' % (cifar10.TOWER_NAME, i)) as scope:
-              # Calculate the loss for one tower of the CIFAR model. This function
-              # constructs the entire CIFAR model but shares the variables across
-              # all towers.
-              loss = tower_loss(scope)
+    for i in xrange(FLAGS.num_gpus):
+      with tf.device('/gpu:%d' % i):
+        with tf.name_scope('%s_%d' % (cifar10.TOWER_NAME, i)) as scope:
+          # Calculate the loss for one tower of the CIFAR model. This function
+          # constructs the entire CIFAR model but shares the variables across
+          # all towers.
+          loss = tower_loss(scope)
 
-              # Reuse variables for the next tower.
-              tf.get_variable_scope().reuse_variables()
+          # Reuse variables for the next tower.
+          tf.get_variable_scope().reuse_variables()
 
-              # Retain the summaries from the final tower.
-              summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope)
+          # Retain the summaries from the final tower.
+          summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope)
 
-              # Calculate the gradients for the batch of data on this CIFAR tower.
-              grads = opt.compute_gradients(loss)
+          # Calculate the gradients for the batch of data on this CIFAR tower.
+          grads = opt.compute_gradients(loss)
 
-              # Keep track of the gradients across all towers.
-              tower_grads.append(grads)
+          # Keep track of the gradients across all towers.
+          tower_grads.append(grads)
 
     # We must calculate the mean of each gradient. Note that this is the
     # synchronization point across all towers.
     grads = average_gradients(tower_grads)
 
     # Add a summary to track the learning rate.
-    summaries.append(tf.summary.scalar('learning_rate', lr))
+    summaries.append(tf.scalar_summary('learning_rate', lr))
 
     # Add histograms for gradients.
     for grad, var in grads:
       if grad is not None:
         summaries.append(
-            tf.summary.histogram(var.op.name + '/gradients', grad))
+            tf.histogram_summary(var.op.name + '/gradients', grad))
 
     # Apply the gradients to adjust the shared variables.
     apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
 
     # Add histograms for trainable variables.
     for var in tf.trainable_variables():
-      summaries.append(tf.summary.histogram(var.op.name, var))
+      summaries.append(tf.histogram_summary(var.op.name, var))
 
     # Track the moving averages of all trainable variables.
     variable_averages = tf.train.ExponentialMovingAverage(
@@ -225,7 +223,7 @@ def train():
     saver = tf.train.Saver(tf.all_variables())
 
     # Build the summary operation from the last tower summaries.
-    summary_op = tf.summary.merge(summaries)
+    summary_op = tf.merge_summary(summaries)
 
     # Build an initialization operation to run below.
     init = tf.initialize_all_variables()
@@ -241,7 +239,7 @@ def train():
     # Start the queue runners.
     tf.train.start_queue_runners(sess=sess)
 
-    summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
+    summary_writer = tf.train.SummaryWriter(FLAGS.train_dir, sess.graph)
 
     for step in xrange(FLAGS.max_steps):
       start_time = time.time()

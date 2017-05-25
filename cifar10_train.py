@@ -80,7 +80,7 @@ def train():
     saver = tf.train.Saver(tf.all_variables())
 
     # Build the summary operation based on the TF collection of Summaries.
-    summary_op = tf.summary.merge_all()
+    summary_op = tf.merge_all_summaries()
 
     # Build an initialization operation to run below.
     init = tf.initialize_all_variables()
@@ -93,7 +93,7 @@ def train():
     # Start the queue runners.
     tf.train.start_queue_runners(sess=sess)
 
-    summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
+    summary_writer = tf.train.SummaryWriter(FLAGS.train_dir, sess.graph)
 
     for step in xrange(FLAGS.max_steps):
       start_time = time.time()
