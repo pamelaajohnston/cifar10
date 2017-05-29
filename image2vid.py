@@ -71,7 +71,7 @@ print "Start"
 
 machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles = readConfig.readConfigFile("config.txt")
 
-datadir = srcdatasetdir
+datadir = srcdatasetdir + "/"
 
 if machine == '':
     print "No entry for this machine"
@@ -179,8 +179,8 @@ for data_folder in data_folders:
     
     #The image loop
     for idx, data in enumerate(data_array):
-        if idx > 2:
-            break
+        #if idx > 2:
+        #    break
         
         label = label_names[data_labels[idx]]
         print "image {} label is {}".format(idx, label)
