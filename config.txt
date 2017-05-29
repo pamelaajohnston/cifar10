@@ -1,5 +1,5 @@
 #hostname srcdir dstdirlocal dstdirnetwork x264 yuvCreate labels
-5a79d1e402e3 # /home/data/cifar10_data/cifar-10-batches-bin  # /home/data/cifar10_data # # x264 # 
+5a79d1e402e # /home/data/cifar10_data/cifar-10-batches-bin  # /home/data/cifar10_data # # x264 # 
 
 RG45609 # /Users/pam/Documents/data/CIFAR-10/cifar-10-batches-bin # /Users/pam/Documents/data/CIFAR-10/ #  # ../x264/x264 # 
 
