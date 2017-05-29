@@ -183,7 +183,7 @@ for data_folder in data_folders:
         #    break
         
         label = label_names[data_labels[idx]]
-        print "image {} label is {}".format(idx, label)
+        #print "image {} label is {}".format(idx, label)
         if (idx % 1000 == 0):
             print "image {} label is {}".format(idx, label)
             localtime = time.localtime(time.time())
