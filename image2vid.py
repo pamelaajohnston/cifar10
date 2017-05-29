@@ -71,6 +71,8 @@ print "Start"
 
 machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles = readConfig.readConfigFile("config.txt")
 
+datadir = srcdatasetdir
+
 if machine == '':
     print "No entry for this machine"
     quit()
