@@ -2,11 +2,11 @@ from PIL import Image
 import random
 import os
 import shlex, subprocess
-import yuvview
+#import yuvview
 import numpy as np
 import sys
 import socket
-import readConfig
+#import readConfig
 
 
 def createVideoFromFrame(data, filename, numframes, width, height, offset = 8):
