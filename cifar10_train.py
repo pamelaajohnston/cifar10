@@ -48,11 +48,14 @@ import cifar10
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', '/tmp/cifar10_train',
+#tf.app.flags.DEFINE_string('train_dir', '/tmp/cifar10_train',
+#                           """Directory where to write event logs """
+#                           """and checkpoint.""")
+tf.app.flags.DEFINE_string('train_dir', '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_train',
                            """Directory where to write event logs """
                            """and checkpoint.""")
-tf.app.flags.DEFINE_integer('max_steps', 1000000,
-                            """Number of batches to run.""")
+#tf.app.flags.DEFINE_integer('max_steps', 1000000, """Number of batches to run.""")
+tf.app.flags.DEFINE_integer('max_steps', 1000, """Number of batches to run.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 
@@ -64,6 +67,7 @@ def train():
 
     # Get images and labels for CIFAR-10.
     images, labels = cifar10.distorted_inputs()
+    #quit()
 
     # Build a Graph that computes the logits predictions from the
     # inference model.

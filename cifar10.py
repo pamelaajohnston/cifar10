@@ -51,7 +51,9 @@ FLAGS = tf.app.flags.FLAGS
 # Basic model parameters.
 tf.app.flags.DEFINE_integer('batch_size', 128,
                             """Number of images to process in a batch.""")
-tf.app.flags.DEFINE_string('data_dir', '/tmp/cifar10_data',
+#tf.app.flags.DEFINE_string('data_dir', '/tmp/cifar10_data',
+#                       """Path to the CIFAR-10 data directory.""")
+tf.app.flags.DEFINE_string('data_dir', '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_data',
                            """Path to the CIFAR-10 data directory.""")
 tf.app.flags.DEFINE_boolean('use_fp16', False,
                             """Train the model using fp16.""")
@@ -379,6 +381,7 @@ def maybe_download_and_extract():
   """Download and extract the tarball from Alex's website."""
   dest_directory = FLAGS.data_dir
   if not os.path.exists(dest_directory):
+    print("Making the directory {}".format(dest_directory))
     os.makedirs(dest_directory)
   filename = DATA_URL.split('/')[-1]
   filepath = os.path.join(dest_directory, filename)
@@ -391,4 +394,5 @@ def maybe_download_and_extract():
     print()
     statinfo = os.stat(filepath)
     print('Successfully downloaded', filename, statinfo.st_size, 'bytes.')
+    print("Extracting to {} from {}".format(dest_directory, filepath))
     tarfile.open(filepath, 'r:gz').extractall(dest_directory)

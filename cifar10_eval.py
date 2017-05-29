@@ -45,11 +45,13 @@ import cifar10
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('eval_dir', '/tmp/cifar10_eval',
+#tf.app.flags.DEFINE_string('eval_dir', '/tmp/cifar10_eval',
+#                           """Directory where to write event logs.""")
+tf.app.flags.DEFINE_string('eval_dir', '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_eval',
                            """Directory where to write event logs.""")
 tf.app.flags.DEFINE_string('eval_data', 'test',
                            """Either 'test' or 'train_eval'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/tmp/cifar10_train',
+tf.app.flags.DEFINE_string('checkpoint_dir', '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_train',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
                             """How often to run the eval.""")
@@ -113,7 +115,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
     coord.join(threads, stop_grace_period_secs=10)
 
 
-def evaluate():
+def evaluate_orig():
   """Eval CIFAR-10 for a number of steps."""
   with tf.Graph().as_default() as g:
     # Get images and labels for CIFAR-10.
@@ -145,12 +147,51 @@ def evaluate():
       time.sleep(FLAGS.eval_interval_secs)
 
 
-def main(argv=None):  # pylint: disable=unused-argument
+def evaluate():
+    """Eval CIFAR-10 for a number of steps."""
+    with tf.Graph().as_default() as g:
+        # Get images and labels for CIFAR-10.
+        eval_data = FLAGS.eval_data == 'test'
+        images, labels = cifar10.inputs(eval_data=eval_data)
+    
+        # Build a Graph that computes the logits predictions from the
+        # inference model.
+        logits = cifar10.inference(images)
+    
+        # Calculate predictions.
+        top_k_op = tf.nn.in_top_k(logits, labels, 1)
+    
+        # Restore the moving average version of the learned variables for eval.
+        variable_averages = tf.train.ExponentialMovingAverage(cifar10.MOVING_AVERAGE_DECAY)
+        variables_to_restore = variable_averages.variables_to_restore()
+        saver = tf.train.Saver(variables_to_restore)
+                                                          
+        # Build the summary operation based on the TF collection of Summaries.
+        summary_op = tf.merge_all_summaries()
+                                                          
+        summary_writer = tf.train.SummaryWriter(FLAGS.eval_dir, g)
+                                                          
+        while True:
+            eval_once(saver, summary_writer, top_k_op, summary_op)
+            if FLAGS.run_once:
+                print("run once and return")
+                break
+            time.sleep(FLAGS.eval_interval_secs)
+
+
+def main_orig(argv=None):  # pylint: disable=unused-argument
   cifar10.maybe_download_and_extract()
   if tf.gfile.Exists(FLAGS.eval_dir):
     tf.gfile.DeleteRecursively(FLAGS.eval_dir)
   tf.gfile.MakeDirs(FLAGS.eval_dir)
   evaluate()
+
+def main(argv=None):  # pylint: disable=unused-argument
+    #cifar10.maybe_download_and_extract()
+    if tf.gfile.Exists(FLAGS.eval_dir):
+        tf.gfile.DeleteRecursively(FLAGS.eval_dir)
+    tf.gfile.MakeDirs(FLAGS.eval_dir)
+    evaluate()
 
 
 if __name__ == '__main__':
