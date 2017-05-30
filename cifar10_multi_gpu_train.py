@@ -319,7 +319,7 @@ def main(argv=None):  # pylint: disable=unused-argument
 
         FLAGS.train_dir = train_dir_base  + "/train_" + dir
         if tf.gfile.Exists(FLAGS.train_dir):
-        tf.gfile.DeleteRecursively(FLAGS.train_dir)
+            tf.gfile.DeleteRecursively(FLAGS.train_dir)
         tf.gfile.MakeDirs(FLAGS.train_dir)
         FLAGS.batches_dir = batches_dir_base  + "_" + dir
         FLAGS.checkpoint_dir = FLAGS.train_dir
