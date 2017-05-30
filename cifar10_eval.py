@@ -113,6 +113,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
 
     coord.request_stop()
     coord.join(threads, stop_grace_period_secs=10)
+    return precision
 
 
 def evaluate_orig():
@@ -172,9 +173,9 @@ def evaluate():
         summary_writer = tf.train.SummaryWriter(FLAGS.eval_dir, g)
                                                           
         while True:
-            eval_once(saver, summary_writer, top_k_op, summary_op)
+            precision = eval_once(saver, summary_writer, top_k_op, summary_op)
             if FLAGS.run_once:
-                print("run once and return")
+                return precision
                 break
             time.sleep(FLAGS.eval_interval_secs)
 

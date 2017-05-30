@@ -55,6 +55,8 @@ tf.app.flags.DEFINE_integer('batch_size', 128,
 #                       """Path to the CIFAR-10 data directory.""")
 tf.app.flags.DEFINE_string('data_dir', '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_data',
                            """Path to the CIFAR-10 data directory.""")
+tf.app.flags.DEFINE_string('batches_dir', 'cifar-10-batches-bin',
+                           """Path to the CIFAR-10 data directory.""")
 tf.app.flags.DEFINE_boolean('use_fp16', False,
                             """Train the model using fp16.""")
 
@@ -153,7 +155,7 @@ def distorted_inputs():
   """
   if not FLAGS.data_dir:
     raise ValueError('Please supply a data_dir')
-  data_dir = os.path.join(FLAGS.data_dir, 'cifar-10-batches-bin')
+  data_dir = os.path.join(FLAGS.data_dir, FLAGS.batches_dir)
   images, labels = cifar10_input.distorted_inputs(data_dir=data_dir,
                                                   batch_size=FLAGS.batch_size)
   if FLAGS.use_fp16:
@@ -177,7 +179,7 @@ def inputs(eval_data):
   """
   if not FLAGS.data_dir:
     raise ValueError('Please supply a data_dir')
-  data_dir = os.path.join(FLAGS.data_dir, 'cifar-10-batches-bin')
+  data_dir = os.path.join(FLAGS.data_dir, FLAGS.batches_dir)
   images, labels = cifar10_input.inputs(eval_data=eval_data,
                                         data_dir=data_dir,
                                         batch_size=FLAGS.batch_size)
