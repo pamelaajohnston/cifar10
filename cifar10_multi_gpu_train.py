@@ -48,6 +48,8 @@ import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 import cifar10
+import cifar10_eval
+import image2vid
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -60,6 +62,8 @@ tf.app.flags.DEFINE_integer('num_gpus', 1,
                             """How many GPUs to use.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
+tf.app.flags.DEFINE_string('mylog_dir', '/Users/pam/Documents/data/CIFAR-10/tutorial/',
+                           """Directory where to write my logs """)
 
 
 def tower_loss(scope):
@@ -268,12 +272,69 @@ def train():
         saver.save(sess, checkpoint_path, global_step=step)
 
 
-def main(argv=None):  # pylint: disable=unused-argument
+def main_orig(argv=None):  # pylint: disable=unused-argument
   cifar10.maybe_download_and_extract()
   if tf.gfile.Exists(FLAGS.train_dir):
     tf.gfile.DeleteRecursively(FLAGS.train_dir)
   tf.gfile.MakeDirs(FLAGS.train_dir)
   train()
+
+def main(argv=None):  # pylint: disable=unused-argument
+    cifar10.maybe_download_and_extract()
+    saveFrames = (0, 2, 6)
+    quants = (10, 25, 37, 50)
+    x264 = '../x264/x264'
+    src_dir = os.path.join(FLAGS.data_dir, FLAGS.batches_dir)
+
+    FLAGS.run_once = True
+    #FLAGS.max_steps = 20
+    #FLAGS.checkpoint_dir = '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_train_mine/'
+    #FLAGS.eval_dir = '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_eval/'
+    train_dir_base = FLAGS.train_dir
+    data_dir_base = FLAGS.data_dir
+    batches_dir_base = FLAGS.batches_dir
+    eval_dir_base = FLAGS.eval_dir
+    checkpoint_dir_base = FLAGS.checkpoint_dir
+
+    myDatadirs = []
+    myDatadirs = image2vid.generateDatasets('', src_dir, FLAGS.data_dir, '', x264, '', saveFrames, quants)
+
+    print(myDatadirs)
+    logfile = os.path.join(FLAGS.mylog_dir, "log.txt")
+    log = open(logfile, 'w')
+    log.write("Here are the results \n")
+
+
+    my_data_dirs = []
+    for dir in myDatadirs:
+        myname = FLAGS.batches_dir + "_" + dir
+        name = os.path.join(FLAGS.data_dir, myname)
+        my_data_dirs.append(name)
+
+        print("For testing: These are my datadirs: {}".format(my_data_dirs))
+
+    for dir in myDatadirs:
+        myname = FLAGS.batches_dir + "_" + dir
+        name = os.path.join(FLAGS.data_dir, myname)
+
+        FLAGS.train_dir = train_dir_base  + "/train_" + dir
+        if tf.gfile.Exists(FLAGS.train_dir):
+        tf.gfile.DeleteRecursively(FLAGS.train_dir)
+        tf.gfile.MakeDirs(FLAGS.train_dir)
+        FLAGS.batches_dir = batches_dir_base  + "_" + dir
+        FLAGS.checkpoint_dir = FLAGS.train_dir
+        print("Train dir: {}".format(FLAGS.train_dir))
+        print("Data dir: {}".format(FLAGS.data_dir))
+        print("Batches dir: {}".format(FLAGS.batches_dir))
+        print("Checkpoint dir: {}".format(FLAGS.checkpoint_dir))
+        print("Eval dir: {}".format(FLAGS.eval_dir))
+        train()
+        for idx, datadir in enumerate(myDatadirs):
+            FLAGS.batches_dir = batches_dir_base  + "_" + datadir
+            precision = cifar10_eval.evaluate()
+            print("Evaluating {} on {}-trained network: {}".format(datadir, dir, precision))
+            log.write("Evaluating {} on {}-trained network: {}\n".format(datadir, dir, precision))
+            log.flush()
 
 
 if __name__ == '__main__':
