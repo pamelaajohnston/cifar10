@@ -296,8 +296,13 @@ def main(argv=None):  # pylint: disable=unused-argument
     eval_dir_base = FLAGS.eval_dir
     checkpoint_dir_base = FLAGS.checkpoint_dir
 
-    myDatadirs = []
-    myDatadirs = image2vid.generateDatasets('', src_dir, FLAGS.data_dir, '', x264, '', saveFrames, quants)
+    #myDatadirs = []
+    #myDatadirs = image2vid.generateDatasets('', src_dir, FLAGS.data_dir, '', x264, '', saveFrames, quants)
+    myDatadirs = ["yuv", "y_quv"]
+    for quant in quants:
+        for idx, frame in enumerate(saveFrames):
+            name = "q{}_f{}".format(quant, saveFrames[idx])
+            myDatadirs.append(name)
 
     print(myDatadirs)
     logfile = os.path.join(FLAGS.mylog_dir, "log.txt")
