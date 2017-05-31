@@ -102,6 +102,7 @@ def read_cifar10(filename_queue):
   return result
 
 
+
 def _generate_image_and_label_batch(image, label, min_queue_examples,
                                     batch_size, shuffle):
   """Construct a queued batch of images and labels.
@@ -235,6 +236,9 @@ def distorted_inputs(data_dir, batch_size):
     width = IMAGE_SIZE
     #Just a center crop in the first instance - to maximise reproducability...
     distorted_image = tf.image.resize_image_with_crop_or_pad(reshaped_image, width, height)
+    #convert to rgb...
+    distorted_image = functions.planarYUV_2_planarRGB_areadyshaped(distorted_image)
+    
     # Randomly crop a [height, width] section of the image.
     #distorted_image = tf.random_crop(reshaped_image, [height, width, 3])
     #print(tf.shape(distorted_image))
@@ -302,6 +306,9 @@ def inputs(eval_data, data_dir, batch_size):
   # Crop the central [height, width] of the image.
   resized_image = tf.image.resize_image_with_crop_or_pad(reshaped_image,
                                                          width, height)
+
+  resized_image = functions.planarYUV_2_planarRGB_areadyshaped(resized_image)
+
 
   # Subtract off the mean and divide by the variance of the pixels.
   float_image = tf.image.per_image_whitening(resized_image)

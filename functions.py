@@ -291,6 +291,42 @@ def planarYUV_2_planarRGB(data, width, height):
     rgb = rgb.reshape((width*height*3), )
     return rgb
 
+def planarYUV_2_planarRGB_areadyshaped(data):
+    #print("in planarYUV_2_planarRGB")
+    maxn = 255
+    minn = 0
+    delta = 128.0
+    y = data[0]
+    u = data[1]
+    v = data[2]
+    
+    #print("recon Y:" + str(y[0]))
+    #print("recon U:" + str(u[0]))
+    #print("recon V:" + str(v[0]))
+    
+    
+    r = y + 1.403 * (v-delta)
+    g = y - (0.714 * (v-delta)) - (0.344 * (u-delta))
+    b = y + 1.773 * (u-delta)
+    
+    #r = y + 1.13983 * v
+    #g = y - (0.58060 * v) - (0.39465 * u)
+    #b = y + (2.03211 * u)
+    
+    
+    r = thresholdAndRound(r)
+    r = convertToBytes(r)
+    g = thresholdAndRound(g)
+    g = convertToBytes(g)
+    b = thresholdAndRound(b)
+    b = convertToBytes(b)
+    #print("Reconstructed r:" + str(r[0]))
+    #print("Reconstructed g:" + str(g[0]))
+    #print("Reconstructed b:" + str(b[0]))
+    
+    rgb = np.concatenate((r,g,b), axis = 0)
+    return rgb
+
 def quantiseUV(data, width, height):
     numLevels = 16
     q = 256/numLevels
