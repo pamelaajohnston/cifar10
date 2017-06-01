@@ -149,20 +149,17 @@ def main(argv=None):  # pylint: disable=unused-argument
 
   myDatadirs = []
   myDatadirs = image2vid.generateDatasets('', src_dir, FLAGS.data_dir, '', x264, '', saveFrames, quants)
+  #myDatadirs = ["yuv", "y_quv"]
+  #for quant in quants:
+  #  for idx, frame in enumerate(saveFrames):
+  #    name = "q{}_f{}".format(quant, saveFrames[idx])
+  #    myDatadirs.append(name)
 
   print(myDatadirs)
   logfile = os.path.join(FLAGS.mylog_dir, "log.txt")
   log = open(logfile, 'w')
   log.write("Here are the results \n")
 
-
-  my_data_dirs = []
-  for dir in myDatadirs:
-    myname = FLAGS.batches_dir + "_" + dir
-    name = os.path.join(FLAGS.data_dir, myname)
-    my_data_dirs.append(name)
-
-    print("For testing: These are my datadirs: {}".format(my_data_dirs))
 
   for dir in myDatadirs:
     myname = FLAGS.batches_dir + "_" + dir

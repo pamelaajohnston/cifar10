@@ -237,7 +237,7 @@ def distorted_inputs(data_dir, batch_size):
     #Just a center crop in the first instance - to maximise reproducability...
     distorted_image = tf.image.resize_image_with_crop_or_pad(reshaped_image, width, height)
     #convert to rgb...
-    distorted_image = functions.planarYUV_2_planarRGB_areadyshaped(distorted_image)
+    #distorted_image = functions.planarYUV_2_planarRGB_areadyshaped(distorted_image)
     
     # Randomly crop a [height, width] section of the image.
     #distorted_image = tf.random_crop(reshaped_image, [height, width, 3])
@@ -307,7 +307,7 @@ def inputs(eval_data, data_dir, batch_size):
   resized_image = tf.image.resize_image_with_crop_or_pad(reshaped_image,
                                                          width, height)
 
-  resized_image = functions.planarYUV_2_planarRGB_areadyshaped(resized_image)
+  #resized_image = functions.planarYUV_2_planarRGB_areadyshaped(resized_image)
 
 
   # Subtract off the mean and divide by the variance of the pixels.

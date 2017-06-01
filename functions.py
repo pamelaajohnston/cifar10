@@ -2,7 +2,7 @@ from PIL import Image
 import random
 import os
 import shlex, subprocess
-#import yuvview
+import yuvview
 import numpy as np
 import sys
 import socket
@@ -60,12 +60,14 @@ def compressFile(app, yuvfilename, w, h, qp, outcomp, outdecomp, verbose = False
     if verbose:
         print("************Compressing the yuv************")
     inputres = '{}x{}'.format(w,h)
+
     #app = "../x264/x264"
     #if sys.platform == 'win32':
         #app = "..\\x264\\x264.exe"
-    appargs = '-o {} -q {} --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {}'.format(outcomp, qp, inputres, outdecomp, yuvfilename)
+        #appargs = '-o {} -q {} --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {}'.format(outcomp, qp, inputres, outdecomp, yuvfilename)
+    appargs = '-o {} -q {} --ipratio 1.0 --pbratio 1.0 --no-psy --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {}'.format(outcomp, qp, inputres, outdecomp, yuvfilename)
     # IBBP: 2 b-frames
-    appargs += ' -b 2 --b-adapt 0'
+    #appargs += ' -b 2 --b-adapt 0'
     
     #print appargs
 
@@ -81,14 +83,63 @@ def compressFile(app, yuvfilename, w, h, qp, outcomp, outdecomp, verbose = False
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, err = proc.communicate()
 
+    try:
+        outlines = out.splitlines()
+        iline = outlines[5].split()
+        pline = outlines[6].split()
+        bline = outlines[7].split()
+
+        isize = iline[-1]
+        psize = pline[-1]
+        bsize = bline[-1]
+    except:
+        isize = 0
+        psize = 0
+        bsize = 0
+        print out
+    #print ("iframe average size {}".format(isize))
+
+    return isize, psize, bsize
+
+
     if verbose:
         print err
+        print out
 
 def comparisonMetrics(imageA, imageB, verbose = False):
     if verbose:
         print("************Comparison Metrics************")
     dataA = np.array(list(imageA.getdata()))
     dataB = np.array(list(imageB.getdata()))
+    #m = mse(dataA, dataB)
+    m = yuvview.psnr(dataA, dataB)
+    s = yuvview.ssim(imageA, imageB)
+    return (m, s)
+
+def comparisonMetrics_yuvBuffers(dataA, dataB, width, height, verbose = False):
+    if verbose:
+        print("************Comparison Metrics************")
+            #print("The shape of dataA {}".format(dataA.shape))
+    test = np.asarray(np.ndarray.flatten(dataA), 'u1')
+    pictureA = test.reshape(3, width, height)
+    pictureA = np.swapaxes(pictureA,0,1)
+    pictureA = np.swapaxes(pictureA,1,2)
+    pictureA = np.ndarray.flatten(pictureA)
+    imageA = Image.frombytes('RGB', (width, height), pictureA)
+    test = np.array(list(imageA.getdata()))
+    #print("The shape of the test {} and the data {}".format(test.shape, test))
+
+
+    #print("The shape of dataB {}".format(dataB.shape))
+    test = np.asarray(np.ndarray.flatten(dataB), 'u1')
+    pictureB = test.reshape(3, width, height)
+    pictureB = np.swapaxes(pictureB,0,1)
+    pictureB = np.swapaxes(pictureB,1,2)
+    pictureB = np.ndarray.flatten(pictureB)
+    imageB = Image.frombytes('RGB', (width, height), pictureB)
+    test = np.array(list(imageB.getdata()))
+    #print("The shape of the test {} and the data {}".format(test.shape, test))
+
     #m = mse(dataA, dataB)
     m = yuvview.psnr(dataA, dataB)
     s = yuvview.ssim(imageA, imageB)
@@ -345,6 +396,7 @@ def quantiseUV(data, width, height):
     yuv = yuv.reshape((width*height*3), )
     return yuv
 
+
 def saveToFile(data, filename):
     datayuv = np.asarray(data, 'u1')
     yuvByteArray = bytearray(datayuv)
@@ -386,4 +438,44 @@ def cropROIfromYUV444(data, c, wsrc, hsrc, w, h, x, y):
     data = data.reshape(c,wsrc,hsrc)
     dst[:,:,:] = data[:,x:(x+w), y:(y+h)].copy()
     return dst
+
+def interlace(data, width, height):
+    pic_planar = np.array(data)
+    picture = pic_planar.reshape(3, width, height)
+    yt = picture[0, ::2, :]
+    yb = picture[0, 1::2, :]
+    ut = picture[1, ::2, :]
+    ub = picture[1, 1::2, :]
+    vt = picture[2, ::2, :]
+    vb = picture[2, 1::2, :]
+    
+    
+    # offset the bottom by 2 pixels of (0, 128, 128)
+    a = np.full((height/2, 2), 128)
+    b = np.zeros((height/2, 2))
+    
+    yb = np.concatenate((b,yb), axis = 1)
+    ub = np.concatenate((a,ub), axis = 1)
+    vb = np.concatenate((a,vb), axis = 1)
+    
+    yb = yb[:, 0:width]
+    ub = ub[:, 0:width]
+    vb = vb[:, 0:width]
+    
+    y = np.empty((width, height), dtype=yt.dtype)
+    y[0::2, :] = yt
+    y[1::2, :] = yb
+    u = np.empty((width, height), dtype=ut.dtype)
+    u[0::2, :] = ut
+    u[1::2, :] = ub
+    v = np.empty((width, height), dtype=vt.dtype)
+    v[0::2, :] = vt
+    v[1::2, :] = vb
+    
+    yuv = np.concatenate((y,u,v), axis = 0)
+    yuv = yuv.reshape((width*height*3))
+    
+    return yuv
+
+
 

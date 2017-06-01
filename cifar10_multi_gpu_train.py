@@ -281,8 +281,8 @@ def main_orig(argv=None):  # pylint: disable=unused-argument
 
 def main(argv=None):  # pylint: disable=unused-argument
     cifar10.maybe_download_and_extract()
-    saveFrames = (0, 2, 6)
-    quants = (10, 25, 37, 50)
+    saveFrames = (0, 2, 3, 6)
+    quants = (10, 25, 37, 41, 46, 50)
     x264 = '../x264/x264'
     src_dir = os.path.join(FLAGS.data_dir, FLAGS.batches_dir)
 
@@ -298,7 +298,8 @@ def main(argv=None):  # pylint: disable=unused-argument
 
     #myDatadirs = []
     #myDatadirs = image2vid.generateDatasets('', src_dir, FLAGS.data_dir, '', x264, '', saveFrames, quants)
-    myDatadirs = ["yuv", "y_quv"]
+    #datasetNames = ["yuv", "y_quv", "y_squv", "interlaced"]
+    myDatadirs = ["yuv", "y_quv", "y_squv", "interlaced"]
     for quant in quants:
         for idx, frame in enumerate(saveFrames):
             name = "q{}_f{}".format(quant, saveFrames[idx])
@@ -316,7 +317,7 @@ def main(argv=None):  # pylint: disable=unused-argument
         name = os.path.join(FLAGS.data_dir, myname)
         my_data_dirs.append(name)
 
-        print("For testing: These are my datadirs: {}".format(my_data_dirs))
+    print("For testing: These are my datadirs: {}".format(my_data_dirs))
 
     for dir in myDatadirs:
         myname = FLAGS.batches_dir + "_" + dir

@@ -2,7 +2,7 @@ from PIL import Image
 import random
 import os
 import shlex, subprocess
-#import yuvview
+import yuvview
 import numpy as np
 import sys
 import socket
@@ -15,20 +15,30 @@ import time
 #import shutil as shutil
 
 
-def processSingleImage(data, w, h, x264, saveFrames, quants):
+def processSingleImage(data, w, h, x264, saveFrames, quants, logFile, srcFile, label):
     datayuv = functions.planarRGB_2_planarYUV(data, w, h)
     dataQyuv = datayuv.copy()
     dataQyuv = functions.quantiseUV(dataQyuv, w, h)
     
+    dataSQyuv = datayuv.copy()
+    dataSQyuv = functions.YUV444_2_YUV420(dataSQyuv, w, h)
+    dataSQyuv = functions.YUV420_2_YUV444(dataSQyuv, w, h)
+    
+    dataInterlaced = datayuv.copy()
+    dataInterlaced = functions.interlace(dataInterlaced, w, h)
+    
     frame_dict = {
         'yuv'   : datayuv,
-            'y_quv' : dataQyuv,
+        'y_quv' : dataQyuv,
+        'y_squv': dataSQyuv,
+        'interlaced': dataInterlaced
     }
-    getVideoCompressedImages(datayuv, w, h, frame_dict, x264, saveFrames, quants)
+    getVideoCompressedImages(datayuv, w, h, frame_dict, x264, saveFrames, quants, logFile, srcFile, label)
+
     return frame_dict
 
 
-def getVideoCompressedImages(data, w, h, frame_dict, x264, saveFrames, quants):
+def getVideoCompressedImages(data, w, h, frame_dict, x264, saveFrames, quants, log, srcFile, label):
     numframes = 7
     offset = 8
     width = w
@@ -40,11 +50,13 @@ def getVideoCompressedImages(data, w, h, frame_dict, x264, saveFrames, quants):
     decompyuv = "sequout.yuv"
     #print "Width {} Height {} dstw {} dsth {}".format(width, height, dstw, dsth)
     functions.createVideoFromFrame(data, genyuv, numframes, width, height, offset = 8)
+    compareData = data.reshape(3, w, h)
+    frametype = ['I', 'b', 'b', 'P', 'b', 'b', 'P']
     
     for quant in quants:
         #(app, yuvfilename, w, h, qp, outcomp, outdecomp, verbose = False)
         #print "Quant {}".format(quant)
-        functions.compressFile(x264, genyuv, dstw, dsth, quant, gen264, decompyuv)
+        isize, psize, bsize = functions.compressFile(x264, genyuv, dstw, dsth, quant, gen264, decompyuv)
         frames = functions.cropImagesFromYUVfile(decompyuv, dstw, dsth, saveFrames)
         for idx, frame in enumerate(frames):
             mylen = len(frame)
@@ -55,10 +67,12 @@ def getVideoCompressedImages(data, w, h, frame_dict, x264, saveFrames, quants):
             frameName = "q{}_f{}".format(quant, saveFrames[idx])
             #print frameName
             frame_dict[frameName] = datayuv
+            m,s = functions.comparisonMetrics_yuvBuffers(compareData, datayuv, width, height)
+            #print("Quant: {} PSNR: {} and SSIM: {}".format(quant, m, s))
+            log.write("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}\n".format(srcFile, label, quant, saveFrames[idx], frametype[saveFrames[idx]], m, s, isize, psize, bsize))
+
     #testrgb = planarYUV_2_planarRGB(datayuv, width=32, height=32)
     #display_image_rgb(testrgb, 32, 32)
-
-
 
 
 datadir = '/Users/pam/Documents/data/CIFAR-10/cifar-10-batches-bin/'
@@ -96,7 +110,7 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
     log.write("dst: {}".format(dstdatasetdir))
     log.write("x264: {}".format(x264))
     log.write("batchfiles: {} \n".format(batchfiles))
-    log.write("filename, quant, frametype, label, PSNR, SSIM, filesize, numframes \n")
+    log.write("filename, quant, framenumber, frametype, PSNR, SSIM, isize, psize, bsize \n")
 
     #data_folders = [datadir+'data_batch_1']
     #data_folders = [datadir+'test_batch']
@@ -130,12 +144,6 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
             data_labels = data_dict['labels']
             data_batch_label = data_dict['batch_label']
             data_filenames = data_dict['filenames']
-            datasetNames = ["yuv", "y_quv"]
-            for quant in quants:
-                for idx, frame in enumerate(saveFrames):
-                    name = "q{}_f{}".format(quant, saveFrames[idx])
-                    datasetNames.append(name)
-            #datasetNames = ["yuv"]
         else:
             print data_folder
             f = open(data_folder, "rb")
@@ -146,6 +154,7 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
             allTheData = allTheData.reshape(num_cases_per_batch, recordSize)
             data_labels = allTheData[:, 0].copy()
             data_array = allTheData[:, 1:].copy()
+            data_batch_label = os.path.basename(data_folder)
             #from URL, 1 byte label, 3072 bytes rgb data in planar order
             
 
@@ -154,12 +163,12 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
             #print("The shape of data_labels {}".format(data_labels.shape))
             #print("The shape of data_array {}".format(data_array.shape))
             
-            datasetNames = ["yuv", "y_quv"]
-            for quant in quants:
-                for idx, frame in enumerate(saveFrames):
-                    name = "q{}_f{}".format(quant, saveFrames[idx])
-                    datasetNames.append(name)
-            #datasetNames = ["yuv"]
+        datasetNames = ["yuv", "y_quv", "y_squv", "interlaced"]
+        for quant in quants:
+            for idx, frame in enumerate(saveFrames):
+                name = "q{}_f{}".format(quant, saveFrames[idx])
+                datasetNames.append(name)
+        #datasetNames = ["yuv"]
         
         
         
@@ -183,7 +192,7 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
                 print "image {} label is {}".format(idx, label)
                 localtime = time.localtime(time.time())
                 print "Local current time :", localtime
-            frame_dict = processSingleImage(data, width, height, x264, saveFrames, quants)
+            frame_dict = processSingleImage(data, width, height, x264, saveFrames, quants, log, data_batch_label, label)
             #print "Here are the keys: "
             #print frame_dict.keys()
             # sort the frames into their datasets
@@ -246,8 +255,8 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
 def main (argv=None):
     print "Start"
     machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles = readConfig.readConfigFile("config.txt")
-    saveFrames = (0, 2, 6)
-    quants = (10, 25, 37, 50)
+    saveFrames = (0, 2, 3, 6)
+    quants = (10, 25, 37, 41, 46, 50)
     
     generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants)
     #quit()
