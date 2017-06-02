@@ -142,7 +142,7 @@ def _generate_image_and_label_batch(image, label, min_queue_examples,
   return images, tf.reshape(label_batch, [batch_size])
 
 
-def distorted_inputs_orig(data_dir, batch_size):
+def distorted_inputs(data_dir, batch_size):
   """Construct distorted input for CIFAR training using the Reader ops.
 
   Args:
@@ -199,7 +199,7 @@ def distorted_inputs_orig(data_dir, batch_size):
   return _generate_image_and_label_batch(float_image, read_input.label,
                                          min_queue_examples, batch_size,
                                          shuffle=True)
-def distorted_inputs(data_dir, batch_size):
+def distorted_inputs_noAugmentation(data_dir, batch_size):
   """Construct distorted input for CIFAR training using the Reader ops.
 
   Args:
