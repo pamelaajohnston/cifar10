@@ -257,8 +257,9 @@ def main (argv=None):
     machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles = readConfig.readConfigFile("config.txt")
     saveFrames = (0, 2, 3, 6)
     quants = (10, 25, 37, 41, 46, 50)
+    bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
     
-    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants)
+    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, bitrates)
     #quit()
 
 if __name__ == "__main__":

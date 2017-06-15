@@ -51,7 +51,7 @@ tf.app.flags.DEFINE_string('eval_dir', '/Users/pam/Documents/data/CIFAR-10/tutor
                            """Directory where to write event logs.""")
 tf.app.flags.DEFINE_string('eval_data', 'test',
                            """Either 'test' or 'train_eval'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_train',
+tf.app.flags.DEFINE_string('checkpoint_dir', '/Users/pam/Documents/data/CIFAR-10/test3/cifar10_train/train_yuv',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
                             """How often to run the eval.""")
@@ -80,7 +80,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
       # extract global_step from it.
       global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
     else:
-      print('No checkpoint file found')
+      print('No checkpoint file found {} and {}'.format(FLAGS.checkpoint_dir, ckpt))
       return
 
     # Start the queue runners.

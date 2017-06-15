@@ -66,6 +66,11 @@ def compressFile(app, yuvfilename, w, h, qp, outcomp, outdecomp, verbose = False
         #app = "..\\x264\\x264.exe"
         #appargs = '-o {} -q {} --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {}'.format(outcomp, qp, inputres, outdecomp, yuvfilename)
     appargs = '-o {} -q {} --ipratio 1.0 --pbratio 1.0 --no-psy --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {}'.format(outcomp, qp, inputres, outdecomp, yuvfilename)
+
+    if qp > 100:
+        #it's bitrate, not qp, set up args accordingly (bitrate in kbps)
+        kbps = int((qp+512)/1024)
+        appargs = '-o {} -B {} --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {}'.format(outcomp, kbps, inputres, outdecomp, yuvfilename)
     # IBBP: 2 b-frames
     #appargs += ' -b 2 --b-adapt 0'
     

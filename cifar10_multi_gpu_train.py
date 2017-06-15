@@ -235,6 +235,10 @@ def train():
     # Start running operations on the Graph. allow_soft_placement must be set to
     # True to build towers on GPU, as some of the ops do not have GPU
     # implementations.
+    
+    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+    #sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
     sess = tf.Session(config=tf.ConfigProto(
         allow_soft_placement=True,
         log_device_placement=FLAGS.log_device_placement))
@@ -283,6 +287,8 @@ def main(argv=None):  # pylint: disable=unused-argument
     cifar10.maybe_download_and_extract()
     saveFrames = (0, 2, 3, 6)
     quants = (10, 25, 37, 41, 46, 50)
+    bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
+    quants = (200000, 100000, 50000, 35000, 20000, 10000)
     x264 = '../x264/x264'
     src_dir = os.path.join(FLAGS.data_dir, FLAGS.batches_dir)
 
