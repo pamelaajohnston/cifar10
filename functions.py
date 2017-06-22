@@ -8,6 +8,28 @@ import sys
 import socket
 #import readConfig
 
+def doubleImage(data, width, height):
+    doubleW = width * 2
+    doubleH = height * 2
+    import PIL
+    rgbframe = planarYUV_2_planarRGB(data, height, width)
+    test = np.asarray(rgbframe, 'u1')
+    pictureA = test.reshape(3, height, width)
+    pictureA = np.swapaxes(pictureA, 0, 1)
+    pictureA = np.swapaxes(pictureA, 1, 2)
+    pictureA = np.ndarray.flatten(pictureA)
+    imageA = Image.frombytes('RGB', (height, width), pictureA)
+
+    imageA = imageA.resize((doubleH, doubleW), PIL.Image.LANCZOS)
+
+    pixels = list(imageA.getdata())
+    pixels = np.asarray(pixels, 'u1')
+    pixels = pixels.reshape(doubleH, doubleW, 3)
+    pixels = np.swapaxes(pixels, 2, 1)
+    pixels = np.swapaxes(pixels, 1, 0)
+    pixels = pixels.flatten()
+    yuvpixels = planarRGB_2_planarYUV(pixels, doubleH, doubleW)
+    return yuvpixels
 
 def createVideoFromFrame(data, filename, numframes, width, height, offset = 8):
     #print("length of data is: " + str(len(data)))

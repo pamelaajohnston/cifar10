@@ -76,8 +76,8 @@ def getVideoCompressedImages(data, w, h, frame_dict, x264, saveFrames, quants, l
 
 
 datadir = '/Users/pam/Documents/data/CIFAR-10/cifar-10-batches-bin/'
-srcdatasetdir = '/Users/pam/Documents/data/CIFAR-10/cifar-10-batches-py/'
-dstdatasetdir = '/Users/pam/Documents/data/CIFAR-10/'
+srcdatasetdir = '/Users/pam/Documents/data/CIFAR-10/cifar-10-batches-bin'
+dstdatasetdir = '/Users/pam/Documents/data/CIFAR-10/dataset'
 x264 = "../x264/x264"
 
 
@@ -171,16 +171,15 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         #datasetNames = ["yuv"]
         
         
-        
-        
-        
 
         #print datasetNames
         #print "The length of datasetNames {}".format(datasetNames)
 
 
-        dataset = np.ndarray(shape=(len(datasetNames), num_cases_per_batch, (channels*width*height)), dtype=np.float32)
-        
+        #dataset = np.ndarray(shape=(len(datasetNames), num_cases_per_batch, (channels*width*height)), dtype=np.float32)
+        # if doubling image
+        dataset = np.ndarray(shape=(len(datasetNames), num_cases_per_batch, (channels*width*2*height*2)), dtype=np.float32)
+
         #The image loop
         for idx, data in enumerate(data_array):
             #if idx > 2:
@@ -192,13 +191,25 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
                 print "image {} label is {}".format(idx, label)
                 localtime = time.localtime(time.time())
                 print "Local current time :", localtime
-            frame_dict = processSingleImage(data, width, height, x264, saveFrames, quants, log, data_batch_label, label)
+
+            # Here, scale the image up...
+            w = width
+            h = height
+
+
+            data = functions.doubleImage(data, w, h)
+            w = w*2
+            h = h*2
+
+
+
+            frame_dict = processSingleImage(data, w, h, x264, saveFrames, quants, log, data_batch_label, label)
             #print "Here are the keys: "
             #print frame_dict.keys()
             # sort the frames into their datasets
             for nameIdx, name in enumerate(datasetNames):
                 frame = np.asarray(frame_dict[name])
-                frame = frame.reshape((channels*width*height), )
+                frame = frame.reshape((channels*w*h), )
                 #normalise
                 frame = (frame.astype(float) - pixel_depth / 2) / pixel_depth
                 #print "name {} the frame shape: {}".format(name, frame.shape)

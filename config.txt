@@ -1,8 +1,6 @@
 #hostname srcdir dstdirlocal dstdirnetwork x264 yuvCreate labels
 5a79d1e402e # /home/data/cifar10_data/cifar-10-batches-bin  # /home/data/cifar10_data # # x264 # 
-
-RG45609 # /Users/pam/Documents/data/CIFAR-10/cifar-10-batches-bin # /Users/pam/Documents/data/CIFAR-10/dataset/ #  # ../x264/x264 # 
-
+RG4560 # /Users/pam/Documents/data/CIFAR-10/cifar-10-batches-bin # /Users/pam/Documents/data/CIFAR-10/dataset/ #  # ../x264/x264 # 
 #RG-N426-PJ # C:\data\notMNIST\notMNIST_large_original # C:\data\notMNIST\notMNIST_Large_compressed # ..\x264\x264.exe  #J#I#H
 #RG45609 # /Users/pam/Documents/data/CIFAR-10/cifar-10-batches-py/ # /Users/pam/Documents/data/CIFAR-10/ #  # ../x264/x264 # data_batch_1
 
