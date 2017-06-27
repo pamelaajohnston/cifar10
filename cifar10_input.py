@@ -29,10 +29,10 @@ import tensorflow as tf
 # Process images of this size. Note that this differs from the original CIFAR
 # image size of 32 x 32. If one alters this number, then the entire model
 # architecture will change and any model would need to be retrained.
-#IMAGE_SIZE = 24
-#INPUT_IMAGE_SIZE = 32
-INPUT_IMAGE_SIZE = 64
-IMAGE_SIZE = 48
+IMAGE_SIZE = 24
+INPUT_IMAGE_SIZE = 32
+#INPUT_IMAGE_SIZE = 64
+#IMAGE_SIZE = 48
 
 # Global constants describing the CIFAR-10 data set.
 NUM_CLASSES = 10

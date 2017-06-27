@@ -75,7 +75,7 @@ def train():
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
-    logits = cifar10.inference_3(images)
+    logits = cifar10.inference_switch(images, 4)
 
     # Calculate loss.
     loss = cifar10.loss(logits, labels)
@@ -211,6 +211,9 @@ def main(argv=None):  # pylint: disable=unused-argument
         for idx, frame in enumerate(saveFrames):
             name = "q{}_f{}".format(quant, saveFrames[idx])
             myDatadirs.append(name)
+
+    # For a reduced test...
+    myDatadirs = ["yuv", "q200000_f0", "q35000_f0", "q10000_f0"]
 
     print(myDatadirs)
     logfile = os.path.join(FLAGS.mylog_dir, "log.txt")

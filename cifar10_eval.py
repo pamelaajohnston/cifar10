@@ -225,7 +225,7 @@ def evaluate():
         # Build a Graph that computes the logits predictions from the
         # inference model.
         print("calling inference")
-        logits = cifar10.inference(images)
+        logits = cifar10.inference_switch(images)
     
         # Calculate predictions.
         print("calculating predictions")

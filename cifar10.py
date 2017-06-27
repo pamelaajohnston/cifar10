@@ -13,6 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 
+from __future__ import print_function
+
 """Builds the CIFAR-10 network.
 
 Summary of available functions:
@@ -59,6 +61,10 @@ tf.app.flags.DEFINE_string('batches_dir', 'cifar-10-batches-bin_yuv',
                            """Path to the CIFAR-10 data directory.""")
 tf.app.flags.DEFINE_boolean('use_fp16', False,
                             """Train the model using fp16.""")
+
+tf.app.flags.DEFINE_string('prelearned_checkpoint', '/Users/pam/Documents/data/CIFAR-10/test3/cifar10_train/train_yuv/model.ckpt-29999',
+                           """The same network architecture trained on something else""")
+
 
 # Global constants describing the CIFAR-10 data set.
 IMAGE_SIZE = cifar10_input.IMAGE_SIZE
@@ -115,6 +121,21 @@ def _variable_on_cpu(name, shape, initializer):
     var = tf.get_variable(name, shape, initializer=initializer, dtype=dtype)
   return var
 
+def _variable_on_cpu_with_constant(name, initializer):
+  """Helper to create a Variable stored on CPU memory.
+
+  Args:
+    name: name of the variable
+    shape: list of ints
+    initializer: initializer for Variable
+
+  Returns:
+    Variable Tensor
+  """
+  with tf.device('/cpu:0'):
+    dtype = tf.float16 if FLAGS.use_fp16 else tf.float32
+    var = tf.get_variable(name, initializer=initializer, dtype=dtype)
+  return var
 
 def _variable_with_weight_decay_orig(name, shape, stddev, wd):
   """Helper to create an initialized Variable with weight decay.
@@ -143,7 +164,7 @@ def _variable_with_weight_decay_orig(name, shape, stddev, wd):
   return var
 
 
-def _variable_with_weight_decay(name, shape, stddev, wd, file_name='none'):
+def _variable_with_weight_decay(name, shape, stddev, wd, fresh_init = True, init_tensor=0, verbose=False):
     """Helper to create an initialized Variable with weight decay.
         
         Note that the Variable is initialized with a truncated normal distribution.
@@ -159,21 +180,28 @@ def _variable_with_weight_decay(name, shape, stddev, wd, file_name='none'):
         Returns:
         Variable Tensor
         """
-    if(file_name == 'none'):
+    if verbose:
         print("The name of the variable: {}".format(name))
-        dtype = tf.float16 if FLAGS.use_fp16 else tf.float32
+    dtype = tf.float16 if FLAGS.use_fp16 else tf.float32
+
+
+    if fresh_init:
         var = _variable_on_cpu(
                    name,
                    shape,
                    tf.truncated_normal_initializer(stddev=stddev, dtype=dtype))
-        if wd is not None:
-            weight_decay = tf.mul(tf.nn.l2_loss(var), wd, name='weight_loss')
-            tf.add_to_collection('losses', weight_decay)
-        return var
     else:
-        print("Getting {} from file {} WARNING: no checks performed!!!!!!".format(name, file_name))
-        reader = tf.NewCheckpointReader(file_name)
-        var = reader.get_tensor(name)
+        var = _variable_on_cpu_with_constant(
+                   name,
+                   init_tensor)
+
+    if verbose:
+        print("Here's the variable of name {}:".format(name))
+        my_vars = tf.Print(var, [var], message="This is var: ")
+    if wd is not None:
+        weight_decay = tf.mul(tf.nn.l2_loss(var), wd, name='weight_loss')
+        tf.add_to_collection('losses', weight_decay)
+    return var
 
 
 def distorted_inputs():
@@ -227,6 +255,10 @@ def inference_switch(images, type=1):
         return inference(images)
     elif type == 2:
         return inference_2(images)
+    elif type == 3:
+        return inference_3(images)
+    elif type == 4:
+        return inference_4(images, FLAGS.prelearned_checkpoint)
 
 
 def inference(images):
@@ -243,6 +275,8 @@ def inference(images):
   # If we only ran this model on a single GPU, we could simplify this function
   # by replacing all instances of tf.get_variable() with tf.Variable().
   #
+  # PAJ: This is the original from the tutorial. Expect 84% accuracy after 30k steps
+
   # conv1
   with tf.variable_scope('conv1') as scope:
     kernel = _variable_with_weight_decay('weights',
@@ -311,100 +345,6 @@ def inference(images):
 
   return softmax_linear
 
-def inference_3(images):
-  """Build the CIFAR-10 model.
-
-  Args:
-    images: Images returned from distorted_inputs() or inputs().
-
-  Returns:
-    Logits.
-  """
-  # We instantiate all variables using tf.get_variable() instead of
-  # tf.Variable() in order to share variables across multiple GPU training runs.
-  # If we only ran this model on a single GPU, we could simplify this function
-  # by replacing all instances of tf.get_variable() with tf.Variable().
-  #
-  # conv1
-  with tf.variable_scope('conv1') as scope:
-    kernel = _variable_with_weight_decay('weights',
-                                         shape=[9, 9, 3, 64],
-                                         stddev=5e-2,
-                                         wd=0.0)
-    conv = tf.nn.conv2d(images, kernel, [1, 1, 1, 1], padding='SAME')
-    biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.0))
-    bias = tf.nn.bias_add(conv, biases)
-    conv1 = tf.nn.relu(bias, name=scope.name)
-    _activation_summary(conv1)
-
-  # pool1
-  pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
-                         padding='SAME', name='pool1')
-  # norm1
-  norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
-                    name='norm1')
-
-  # conv2
-  with tf.variable_scope('conv2') as scope:
-    kernel = _variable_with_weight_decay('weights',
-                                         shape=[5, 5, 64, 64],
-                                         stddev=5e-2,
-                                         wd=0.0)
-    conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
-    biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.1))
-    bias = tf.nn.bias_add(conv, biases)
-    conv2 = tf.nn.relu(bias, name=scope.name)
-    _activation_summary(conv2)
-
-  # conv3
-  with tf.variable_scope('conv3') as scope:
-    kernel = _variable_with_weight_decay('weights',
-                                         shape=[5, 5, 64, 64],
-                                         stddev=5e-2,
-                                         wd=0.0)
-    conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
-    biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.1))
-    bias = tf.nn.bias_add(conv, biases)
-    conv3 = tf.nn.relu(bias, name=scope.name)
-    _activation_summary(conv3)
-
-  # norm3
-  norm3 = tf.nn.lrn(conv3, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
-                    name='norm3')
-  # pool2
-  pool3 = tf.nn.max_pool(norm3, ksize=[1, 3, 3, 1],
-                         strides=[1, 2, 2, 1], padding='SAME', name='pool3')
-
-  # local3
-  with tf.variable_scope('local3') as scope:
-    # Move everything into depth so we can perform a single matrix multiply.
-    reshape = tf.reshape(pool3, [FLAGS.batch_size, -1])
-    dim = reshape.get_shape()[1].value
-    weights = _variable_with_weight_decay('weights', shape=[dim, 384],
-                                          stddev=0.04, wd=0.004)
-    biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.1))
-    local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
-    _activation_summary(local3)
-
-  # local4
-  with tf.variable_scope('local4') as scope:
-    weights = _variable_with_weight_decay('weights', shape=[384, 192],
-                                          stddev=0.04, wd=0.004)
-    biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
-    local4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
-    _activation_summary(local4)
-
-  # softmax, i.e. softmax(WX + b)
-  with tf.variable_scope('softmax_linear') as scope:
-    weights = _variable_with_weight_decay('weights', [192, NUM_CLASSES],
-                                          stddev=1/192.0, wd=0.0)
-    biases = _variable_on_cpu('biases', [NUM_CLASSES],
-                              tf.constant_initializer(0.0))
-    softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
-    _activation_summary(softmax_linear)
-
-  return softmax_linear
-
 def inference_2(images):
   """Build the CIFAR-10 model.
 
@@ -422,6 +362,9 @@ def inference_2(images):
   # If we only ran this model on a single GPU, we could simplify this function
   # by replacing all instances of tf.get_variable() with tf.Variable().
   #
+  # PAJ: This is Pam's version of AlexNet for CIFAR-10. Same number of conv and fc layers.
+  # It converged on CIFAR-10, 64x64 but it's accuracy was 10% (so it didn't learn anything!).
+  # Probably need to work out how to add drop out to this.
   # conv1
   with tf.variable_scope('conv1') as scope:
     kernel = _variable_with_weight_decay('weights',
@@ -557,6 +500,8 @@ def inference_3(images):
   # If we only ran this model on a single GPU, we could simplify this function
   # by replacing all instances of tf.get_variable() with tf.Variable().
   #
+  # PAJ: This is the original from the tutorial plus an extra layer prefixed on.
+  # PAJ: designed with 64x64 sized images in mind.
   # conv1
   with tf.variable_scope('conv1') as scope:
     kernel = _variable_with_weight_decay('weights',
@@ -624,6 +569,144 @@ def inference_3(images):
     _activation_summary(softmax_linear)
 
   return softmax_linear
+
+def inference_4(images, input):
+  """Build the CIFAR-10 model.
+
+  Args:
+    images: Images returned from distorted_inputs() or inputs().
+
+  Returns:
+    Logits.
+
+  Notes:
+      It's a different network from the original one, this one takes 64x64 images
+  """
+  # We instantiate all variables using tf.get_variable() instead of
+  # tf.Variable() in order to share variables across multiple GPU training runs.
+  # If we only ran this model on a single GPU, we could simplify this function
+  # by replacing all instances of tf.get_variable() with tf.Variable().
+  #
+  # PAJ: This is the original from the tutorial plus an extra layer prefixed on.
+  # PAJ: designed with 64x64 sized images in mind.
+  # PAJ: This one designed to lift its initial weights from some checkpoint file specified in the flags (I think!)
+
+  reader = tf.train.NewCheckpointReader(FLAGS.prelearned_checkpoint)
+  # conv1
+  with tf.variable_scope('conv1') as scope:
+    print("Initialising the network with kernels")
+    full_name = 'conv1/weights'
+    var = reader.get_tensor(full_name)
+    var_c1_w = tf.pack(var)
+    kernel = _variable_with_weight_decay('weights',
+                                         shape=[5, 5, 3, 64],
+                                         stddev=5e-2,
+                                         wd=0.0,
+                                         verbose=True,
+                                         fresh_init=False,
+                                         init_tensor=var_c1_w)
+    conv = tf.nn.conv2d(images, kernel, [1, 1, 1, 1], padding='SAME')
+    full_name = 'conv1/biases'
+    var = reader.get_tensor(full_name)
+    var_c1_b = tf.pack(var)
+    biases = _variable_on_cpu_with_constant('biases', var_c1_b)
+    bias = tf.nn.bias_add(conv, biases)
+    conv1 = tf.nn.relu(bias, name=scope.name)
+    _activation_summary(conv1)
+
+  # pool1
+  pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
+                         padding='SAME', name='pool1')
+  # norm1
+  norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
+                    name='norm1')
+
+  # conv2
+  with tf.variable_scope('conv2') as scope:
+    full_name = 'conv2/weights'
+    var = reader.get_tensor(full_name)
+    var_c2_w = tf.pack(var)
+    kernel = _variable_with_weight_decay('weights',
+                                         shape=[5, 5, 64, 64],
+                                         stddev=5e-2,
+                                         wd=0.0,
+                                         fresh_init=False,
+                                         init_tensor=var_c2_w)
+    conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
+    full_name = 'conv2/biases'
+    var = reader.get_tensor(full_name)
+    var_c2_b = tf.pack(var)
+    biases = _variable_on_cpu_with_constant('biases', var_c2_b)
+    bias = tf.nn.bias_add(conv, biases)
+    conv2 = tf.nn.relu(bias, name=scope.name)
+    _activation_summary(conv2)
+
+  # norm2
+  norm2 = tf.nn.lrn(conv2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
+                    name='norm2')
+  # pool2
+  pool2 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1],
+                         strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+
+  # local3
+  with tf.variable_scope('local3') as scope:
+    # Move everything into depth so we can perform a single matrix multiply.
+    reshape = tf.reshape(pool2, [FLAGS.batch_size, -1])
+    dim = reshape.get_shape()[1].value
+    full_name = 'local3/weights'
+    var = reader.get_tensor(full_name)
+    var_l3_w = tf.pack(var)
+    weights = _variable_with_weight_decay('weights',
+                                          shape=[dim, 384],
+                                          stddev=0.04,
+                                          wd=0.004,
+                                          fresh_init=False,
+                                          init_tensor=var_l3_w)
+    full_name = 'local3/biases'
+    var = reader.get_tensor(full_name)
+    var_l3_b = tf.pack(var)
+    biases = _variable_on_cpu_with_constant('biases',var_l3_b)
+    local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
+    _activation_summary(local3)
+
+  # local4
+  with tf.variable_scope('local4') as scope:
+    full_name = 'local4/weights'
+    var = reader.get_tensor(full_name)
+    var_l4_w = tf.pack(var)
+    weights = _variable_with_weight_decay('weights',
+                                          shape=[384, 192],
+                                          stddev=0.04,
+                                          wd=0.004,
+                                          fresh_init = False,
+                                          init_tensor = var_l4_w)
+    full_name = 'local4/biases'
+    var = reader.get_tensor(full_name)
+    var_l4_b = tf.pack(var)
+    biases = _variable_on_cpu_with_constant('biases', var_l4_b)
+    local4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
+    _activation_summary(local4)
+
+  # softmax, i.e. softmax(WX + b)
+  with tf.variable_scope('softmax_linear') as scope:
+    full_name = 'softmax_linear/weights'
+    var = reader.get_tensor(full_name)
+    var_softmax_w = tf.pack(var)
+    weights = _variable_with_weight_decay('weights',
+                                          [192, NUM_CLASSES],
+                                          stddev=1/192.0,
+                                          wd=0.0,
+                                          fresh_init = False,
+                                          init_tensor = var_softmax_w)
+    full_name = 'softmax_linear/biases'
+    var = reader.get_tensor(full_name)
+    var_softmax_b = tf.pack(var)
+    biases = _variable_on_cpu_with_constant('biases', var_softmax_b)
+    softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
+    _activation_summary(softmax_linear)
+
+  return softmax_linear
+
 
 def loss(logits, labels):
   """Add L2Loss to all the trainable variables.
