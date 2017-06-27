@@ -350,7 +350,7 @@ def main_testall(argv=None):  # pylint: disable=unused-argument
 
 def main(argv=None):  # pylint: disable=unused-argument
     #cifar10.maybe_download_and_extract()
-    saveFrames = (0)
+    saveFrames = (0,)
     quants = (10, 25, 37, 41, 46, 50)
     #bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
     #quants = (200000, 100000, 50000, 35000, 20000, 10000)
