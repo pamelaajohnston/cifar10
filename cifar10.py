@@ -592,12 +592,41 @@ def inference_4(images, input):
   # PAJ: This one designed to lift its initial weights from some checkpoint file specified in the flags (I think!)
 
   reader = tf.train.NewCheckpointReader(FLAGS.prelearned_checkpoint)
+  full_name = 'conv1/weights'
+  var = reader.get_tensor(full_name)
+  var_c1_w = tf.pack(var)
+  full_name = 'conv1/biases'
+  var = reader.get_tensor(full_name)
+  var_c1_b = tf.pack(var)
+  full_name = 'conv2/weights'
+  var = reader.get_tensor(full_name)
+  var_c2_w = tf.pack(var)
+  full_name = 'conv2/biases'
+  var = reader.get_tensor(full_name)
+  var_c2_b = tf.pack(var)
+  full_name = 'local3/weights'
+  var = reader.get_tensor(full_name)
+  var_l3_w = tf.pack(var)
+  full_name = 'local3/biases'
+  var = reader.get_tensor(full_name)
+  var_l3_b = tf.pack(var)
+  full_name = 'local4/weights'
+  var = reader.get_tensor(full_name)
+  var_l4_w = tf.pack(var)
+  full_name = 'local4/biases'
+  var = reader.get_tensor(full_name)
+  var_l4_b = tf.pack(var)
+  full_name = 'softmax_linear/weights'
+  var = reader.get_tensor(full_name)
+  var_softmax_w = tf.pack(var)
+  full_name = 'softmax_linear/biases'
+  var = reader.get_tensor(full_name)
+  var_softmax_b = tf.pack(var)
+
+
   # conv1
   with tf.variable_scope('conv1') as scope:
     print("Initialising the network with kernels")
-    full_name = 'conv1/weights'
-    var = reader.get_tensor(full_name)
-    var_c1_w = tf.pack(var)
     kernel = _variable_with_weight_decay('weights',
                                          shape=[5, 5, 3, 64],
                                          stddev=5e-2,
@@ -606,9 +635,6 @@ def inference_4(images, input):
                                          fresh_init=False,
                                          init_tensor=var_c1_w)
     conv = tf.nn.conv2d(images, kernel, [1, 1, 1, 1], padding='SAME')
-    full_name = 'conv1/biases'
-    var = reader.get_tensor(full_name)
-    var_c1_b = tf.pack(var)
     biases = _variable_on_cpu_with_constant('biases', var_c1_b)
     bias = tf.nn.bias_add(conv, biases)
     conv1 = tf.nn.relu(bias, name=scope.name)
@@ -623,9 +649,6 @@ def inference_4(images, input):
 
   # conv2
   with tf.variable_scope('conv2') as scope:
-    full_name = 'conv2/weights'
-    var = reader.get_tensor(full_name)
-    var_c2_w = tf.pack(var)
     kernel = _variable_with_weight_decay('weights',
                                          shape=[5, 5, 64, 64],
                                          stddev=5e-2,
@@ -633,9 +656,6 @@ def inference_4(images, input):
                                          fresh_init=False,
                                          init_tensor=var_c2_w)
     conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
-    full_name = 'conv2/biases'
-    var = reader.get_tensor(full_name)
-    var_c2_b = tf.pack(var)
     biases = _variable_on_cpu_with_constant('biases', var_c2_b)
     bias = tf.nn.bias_add(conv, biases)
     conv2 = tf.nn.relu(bias, name=scope.name)
@@ -653,54 +673,40 @@ def inference_4(images, input):
     # Move everything into depth so we can perform a single matrix multiply.
     reshape = tf.reshape(pool2, [FLAGS.batch_size, -1])
     dim = reshape.get_shape()[1].value
-    full_name = 'local3/weights'
-    var = reader.get_tensor(full_name)
-    var_l3_w = tf.pack(var)
     weights = _variable_with_weight_decay('weights',
                                           shape=[dim, 384],
                                           stddev=0.04,
                                           wd=0.004,
                                           fresh_init=False,
                                           init_tensor=var_l3_w)
-    full_name = 'local3/biases'
-    var = reader.get_tensor(full_name)
-    var_l3_b = tf.pack(var)
     biases = _variable_on_cpu_with_constant('biases',var_l3_b)
     local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
     _activation_summary(local3)
 
   # local4
   with tf.variable_scope('local4') as scope:
-    full_name = 'local4/weights'
-    var = reader.get_tensor(full_name)
-    var_l4_w = tf.pack(var)
+
     weights = _variable_with_weight_decay('weights',
                                           shape=[384, 192],
                                           stddev=0.04,
                                           wd=0.004,
                                           fresh_init = False,
                                           init_tensor = var_l4_w)
-    full_name = 'local4/biases'
-    var = reader.get_tensor(full_name)
-    var_l4_b = tf.pack(var)
+
     biases = _variable_on_cpu_with_constant('biases', var_l4_b)
     local4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
     _activation_summary(local4)
 
   # softmax, i.e. softmax(WX + b)
   with tf.variable_scope('softmax_linear') as scope:
-    full_name = 'softmax_linear/weights'
-    var = reader.get_tensor(full_name)
-    var_softmax_w = tf.pack(var)
+
     weights = _variable_with_weight_decay('weights',
                                           [192, NUM_CLASSES],
                                           stddev=1/192.0,
                                           wd=0.0,
                                           fresh_init = False,
                                           init_tensor = var_softmax_w)
-    full_name = 'softmax_linear/biases'
-    var = reader.get_tensor(full_name)
-    var_softmax_b = tf.pack(var)
+
     biases = _variable_on_cpu_with_constant('biases', var_softmax_b)
     softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
     _activation_summary(softmax_linear)

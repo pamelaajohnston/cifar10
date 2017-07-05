@@ -15,8 +15,11 @@ import time
 #import shutil as shutil
 
 
-def processSingleImage(data, w, h, x264, saveFrames, quants, logFile, srcFile, label):
-    datayuv = functions.planarRGB_2_planarYUV(data, w, h)
+def processSingleImage(data, w, h, x264, saveFrames, quants, logFile, srcFile, label, isRGB=True):
+    if isRGB:
+        datayuv = functions.planarRGB_2_planarYUV(data, w, h)
+    else:
+        datayuv = data.copy()
     dataQyuv = datayuv.copy()
     dataQyuv = functions.quantiseUV(dataQyuv, w, h)
     
@@ -81,7 +84,7 @@ dstdatasetdir = '/Users/pam/Documents/data/CIFAR-10/dataset'
 x264 = "../x264/x264"
 
 
-def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants):
+def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="CIFAR10"):
 
     datadir = srcdatasetdir + "/"
 
@@ -93,6 +96,7 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         os.makedirs(dstdatasetdir)
 
     #label = 'A'
+    #if dataSet=="CIFAR10":
     dw = 48
     dh = 48
     numframes = 7
@@ -100,6 +104,13 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
     height = 32
     channels = 3
     pixel_depth = 8
+
+    if dataSet == "MNIST":
+        dw = 48
+        dh = 48
+        width = 28
+        height = 28
+        channels = 1
 
     readApickle = False
 
@@ -132,6 +143,10 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         #data_folders = os.listdir(datadir)
         label_names = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
         data_folders = [f for f in os.listdir(datadir) if os.path.isfile(os.path.join(datadir, f)) and (".bin" in f)]
+
+        if dataSet == "MNIST":
+            label_names = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
         for idx, data_folder in enumerate(data_folders):
             data_folders[idx] = datadir + data_folder
 
@@ -149,19 +164,41 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
             f = open(data_folder, "rb")
             allTheData = np.fromfile(f, 'u1')
             recordSize = (width * height * channels) + 1
+            if dataSet == "MNIST":
+                # the MNIST file has a bunch of stuff in the first 4 32-bit ints (16 bytes)
+                allTheData = allTheData[16:]
+                recordSize = (width * height * channels)
             num_cases_per_batch = allTheData.shape[0] / recordSize
+            print("Numcases: {} recordSize: {} length of data {}".format(num_cases_per_batch, recordSize, len(allTheData)))
             
             allTheData = allTheData.reshape(num_cases_per_batch, recordSize)
-            data_labels = allTheData[:, 0].copy()
-            data_array = allTheData[:, 1:].copy()
+            if dataSet == "CIFAR10":
+                data_labels = allTheData[:, 0].copy()
+                data_array = allTheData[:, 1:].copy()
+            if dataSet == "MNIST":
+                data_label_filename = data_folder.replace(".bin", '')
+                f = open(data_label_filename, "rb")
+                data_labels = np.fromfile(f, 'u1')
+                data_labels = data_labels[8:]
+                # Add the UV channels
+                data_array = allTheData.copy()
+                uv_128s = np.full((num_cases_per_batch, recordSize), 128)
+                data_array = np.concatenate((data_array, uv_128s), axis=1)
+                data_array = np.concatenate((data_array, uv_128s), axis=1)
+                data_array = data_array.flatten()
+                recordSize = recordSize*3
+                data_array = data_array.reshape(num_cases_per_batch, recordSize)
+                # And because we've upped the number of channels...
+                channels = 3
+
             data_batch_label = os.path.basename(data_folder)
             #from URL, 1 byte label, 3072 bytes rgb data in planar order
             
 
         
-            #print("The shape of allTheData {}".format(allTheData.shape))
-            #print("The shape of data_labels {}".format(data_labels.shape))
-            #print("The shape of data_array {}".format(data_array.shape))
+            print("The shape of allTheData {}".format(allTheData.shape))
+            print("The shape of data_labels {}".format(data_labels.shape))
+            print("The shape of data_array {}".format(data_array.shape))
             
         datasetNames = ["yuv", "y_quv", "y_squv", "interlaced"]
         for quant in quants:
@@ -176,9 +213,13 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         #print "The length of datasetNames {}".format(datasetNames)
 
 
-        #dataset = np.ndarray(shape=(len(datasetNames), num_cases_per_batch, (channels*width*height)), dtype=np.float32)
+        dataset = np.ndarray(shape=(len(datasetNames), num_cases_per_batch, (channels*width*height)), dtype=np.float32)
         # if doubling image
-        dataset = np.ndarray(shape=(len(datasetNames), num_cases_per_batch, (channels*width*2*height*2)), dtype=np.float32)
+        #dataset = np.ndarray(shape=(len(datasetNames), num_cases_per_batch, (channels*width*2*height*2)), dtype=np.float32)
+
+        isRGB = True
+        if dataSet == "MNIST":
+            isRGB = False
 
         #The image loop
         for idx, data in enumerate(data_array):
@@ -192,18 +233,19 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
                 localtime = time.localtime(time.time())
                 print "Local current time :", localtime
 
-            # Here, scale the image up...
             w = width
             h = height
 
 
-            data = functions.doubleImage(data, w, h)
-            w = w*2
-            h = h*2
+            # Here, scale the image up...
+            #data = functions.doubleImage(data, w, h)
+            #w = w*2
+            #h = h*2
 
 
 
-            frame_dict = processSingleImage(data, w, h, x264, saveFrames, quants, log, data_batch_label, label)
+
+            frame_dict = processSingleImage(data, w, h, x264, saveFrames, quants, log, data_batch_label, label, isRGB=isRGB)
             #print "Here are the keys: "
             #print frame_dict.keys()
             # sort the frames into their datasets
@@ -263,7 +305,7 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
                 print('Unable to save data to', binFileName, ':', e)
     return datasetNames
 
-def main (argv=None):
+def main_0(argv=None):
     print "Start"
     machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles = readConfig.readConfigFile("config.txt")
     saveFrames = (0, 2, 3, 6)
@@ -272,6 +314,17 @@ def main (argv=None):
     
     generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, bitrates)
     #quit()
+
+
+def main(argv=None):
+    print "Start"
+    machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles = readConfig.readConfigFile("config.txt")
+    saveFrames = (0,)
+    quants = (10, 25, 37, 41, 46, 50)
+    bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
+
+    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="MNIST")
+    # quit()
 
 if __name__ == "__main__":
     main()

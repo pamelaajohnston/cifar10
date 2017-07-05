@@ -29,10 +29,12 @@ import tensorflow as tf
 # Process images of this size. Note that this differs from the original CIFAR
 # image size of 32 x 32. If one alters this number, then the entire model
 # architecture will change and any model would need to be retrained.
-IMAGE_SIZE = 24
-INPUT_IMAGE_SIZE = 32
+#IMAGE_SIZE = 24
+#INPUT_IMAGE_SIZE = 32
 #INPUT_IMAGE_SIZE = 64
 #IMAGE_SIZE = 48
+IMAGE_SIZE = 28
+INPUT_IMAGE_SIZE = 28
 
 # Global constants describing the CIFAR-10 data set.
 NUM_CLASSES = 10
@@ -92,8 +94,7 @@ def read_cifar10(filename_queue):
   print(record_bytes)
 
   # The first bytes represent the label, which we convert from uint8->int32.
-  result.label = tf.cast(
-      tf.slice(record_bytes, [0], [label_bytes]), tf.int32)
+  result.label = tf.cast(tf.slice(record_bytes, [0], [label_bytes]), tf.int32)
 
   # The remaining bytes after the label represent the image, which we reshape
   # from [depth * height * width] to [depth, height, width].
@@ -158,6 +159,8 @@ def distorted_inputs(data_dir, batch_size):
   """
   filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i)
                for i in xrange(1, 6)]
+  # for MNIST
+  filenames = [os.path.join(data_dir, 'train-images-idx3-ubyte.bin'),]
   for f in filenames:
     if not tf.gfile.Exists(f):
       raise ValueError('Failed to find file: ' + f)
@@ -183,10 +186,8 @@ def distorted_inputs(data_dir, batch_size):
 
   # Because these operations are not commutative, consider randomizing
   # the order their operation.
-  distorted_image = tf.image.random_brightness(distorted_image,
-                                               max_delta=63)
-  distorted_image = tf.image.random_contrast(distorted_image,
-                                             lower=0.2, upper=1.8)
+  distorted_image = tf.image.random_brightness(distorted_image, max_delta=63)
+  distorted_image = tf.image.random_contrast(distorted_image, lower=0.2, upper=1.8)
 
   # Subtract off the mean and divide by the variance of the pixels.
   float_image = tf.image.per_image_whitening(distorted_image)
@@ -215,6 +216,9 @@ def distorted_inputs_noAugmentation(data_dir, batch_size):
   """
   filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i)
          for i in xrange(1, 6)]
+  # for MNIST
+  filenames = [os.path.join(data_dir, 'train-images-idx3-ubyte.bin'),]
+
   for f in filenames:
     if not tf.gfile.Exists(f):
         raise ValueError('Failed to find file: ' + f)
@@ -286,9 +290,13 @@ def inputs(eval_data, data_dir, batch_size):
   if not eval_data:
     filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i)
                  for i in xrange(1, 6)]
+    # for MNIST
+    filenames = [os.path.join(data_dir, 'train-images-idx3-ubyte.bin'), ]
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
   else:
     filenames = [os.path.join(data_dir, 'test_batch.bin')]
+    #for MNIST
+    filenames = [os.path.join(data_dir, 't10k-images-idx3-ubyte.bin')]
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
   for f in filenames:
