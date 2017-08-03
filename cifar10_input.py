@@ -1,17 +1,3 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 
 """Routine for decoding the CIFAR-10 binary file format."""
 
@@ -33,13 +19,15 @@ import tensorflow as tf
 #INPUT_IMAGE_SIZE = 32
 #INPUT_IMAGE_SIZE = 64
 #IMAGE_SIZE = 48
-IMAGE_SIZE = 28
-INPUT_IMAGE_SIZE = 28
+IMAGE_SIZE = 96
+INPUT_IMAGE_SIZE = 96
 
 # Global constants describing the CIFAR-10 data set.
 NUM_CLASSES = 10
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50000
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
+#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50000
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10400
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 2600
 
 
 def read_cifar10(filename_queue):
@@ -86,15 +74,18 @@ def read_cifar10(filename_queue):
   reader = tf.FixedLengthRecordReader(record_bytes=record_bytes)
   result.key, value = reader.read(filename_queue)
 
-  print("The value from reading: {}".format(value))
+  print("The value from reading: {} \n".format(value))
 
   # Convert from a string to a vector of uint8 that is record_bytes long.
   record_bytes = tf.decode_raw(value, tf.uint8)
   
-  print(record_bytes)
+  #print(record_bytes)
 
   # The first bytes represent the label, which we convert from uint8->int32.
   result.label = tf.cast(tf.slice(record_bytes, [0], [label_bytes]), tf.int32)
+
+  # The STL labels run from 1-10 will this make a difference? Better to normalise just in case...
+  result.label = result.label - 1
 
   # The remaining bytes after the label represent the image, which we reshape
   # from [depth * height * width] to [depth, height, width].
@@ -157,10 +148,13 @@ def distorted_inputs(data_dir, batch_size):
     images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3] size.
     labels: Labels. 1D tensor of [batch_size] size.
   """
-  filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i)
-               for i in xrange(1, 6)]
+  filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i) for i in xrange(1, 6)]
   # for MNIST
   filenames = [os.path.join(data_dir, 'train-images-idx3-ubyte.bin'),]
+  # for STL-10
+  filenames = [os.path.join(data_dir, 'train_X.bin'),]
+
+
   for f in filenames:
     if not tf.gfile.Exists(f):
       raise ValueError('Failed to find file: ' + f)
@@ -194,15 +188,15 @@ def distorted_inputs(data_dir, batch_size):
 
   # Ensure that the random shuffling has good mixing properties.
   min_fraction_of_examples_in_queue = 0.4
-  min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN *
-                           min_fraction_of_examples_in_queue)
-  print ('Filling queue with %d CIFAR images before starting to train. '
-         'This will take a few minutes.' % min_queue_examples)
+  min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN * min_fraction_of_examples_in_queue)
+  print ('Filling queue with %d images before starting to train. ' 'This will take a few minutes.' % min_queue_examples)
 
   # Generate a batch of images and labels by building up a queue of examples.
   return _generate_image_and_label_batch(float_image, read_input.label,
                                          min_queue_examples, batch_size,
                                          shuffle=True)
+
+
 def distorted_inputs_noAugmentation(data_dir, batch_size):
   """Construct distorted input for CIFAR training using the Reader ops.
 
@@ -214,10 +208,11 @@ def distorted_inputs_noAugmentation(data_dir, batch_size):
   images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3] size.
   labels: Labels. 1D tensor of [batch_size] size.
   """
-  filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i)
-         for i in xrange(1, 6)]
+  filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i) for i in xrange(1, 6)]
   # for MNIST
   filenames = [os.path.join(data_dir, 'train-images-idx3-ubyte.bin'),]
+  # for STL-10
+  filenames = [os.path.join(data_dir, 'train_X.bin'),]
 
   for f in filenames:
     if not tf.gfile.Exists(f):
@@ -288,15 +283,18 @@ def inputs(eval_data, data_dir, batch_size):
     labels: Labels. 1D tensor of [batch_size] size.
   """
   if not eval_data:
-    filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i)
-                 for i in xrange(1, 6)]
+    filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i) for i in xrange(1, 6)]
     # for MNIST
     filenames = [os.path.join(data_dir, 'train-images-idx3-ubyte.bin'), ]
+    # for STL-10
+    filenames = [os.path.join(data_dir, 'train_X.bin'), ]
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
   else:
     filenames = [os.path.join(data_dir, 'test_batch.bin')]
     #for MNIST
     filenames = [os.path.join(data_dir, 't10k-images-idx3-ubyte.bin')]
+    # for STL-10
+    filenames = [os.path.join(data_dir, 'test_X.bin'), ]
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
   for f in filenames:

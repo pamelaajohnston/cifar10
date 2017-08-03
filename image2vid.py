@@ -112,6 +112,13 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         height = 28
         channels = 1
 
+    if dataSet == "STL-10":
+        dw = 112
+        dh = 112
+        width = 96
+        height = 96
+        channels = 3
+
     readApickle = False
 
     logfile = "{}/log.txt".format(dstdatasetdir)
@@ -147,6 +154,9 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         if dataSet == "MNIST":
             label_names = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
+        if dataSet == "STL-10":
+            label_names = ['zero', 'airplane', 'bird', 'car', 'cat', 'deer', 'dog', 'horse', 'monkey', 'ship', 'truck']
+
         for idx, data_folder in enumerate(data_folders):
             data_folders[idx] = datadir + data_folder
 
@@ -168,11 +178,15 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
                 # the MNIST file has a bunch of stuff in the first 4 32-bit ints (16 bytes)
                 allTheData = allTheData[16:]
                 recordSize = (width * height * channels)
+            if dataSet == "STL-10":
+                # STL-10 has a the labels in a different file.
+                recordSize = (width * height * channels)
             num_cases_per_batch = allTheData.shape[0] / recordSize
             print("Numcases: {} recordSize: {} length of data {}".format(num_cases_per_batch, recordSize, len(allTheData)))
             
             allTheData = allTheData.reshape(num_cases_per_batch, recordSize)
             if dataSet == "CIFAR10":
+                # from URL, 1 byte label, 3072 bytes rgb data in planar order
                 data_labels = allTheData[:, 0].copy()
                 data_array = allTheData[:, 1:].copy()
             if dataSet == "MNIST":
@@ -190,10 +204,19 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
                 data_array = data_array.reshape(num_cases_per_batch, recordSize)
                 # And because we've upped the number of channels...
                 channels = 3
+            if dataSet == "STL-10":
+                data_label_filename = data_folder.replace(".bin", '')
+                f = open(data_label_filename, "rb")
+                data_labels = np.fromfile(f, 'u1')
+                print data_labels
+                data_array = allTheData.copy()
+                data_array = data_array.reshape(num_cases_per_batch, channels, height, width)
+                data_array = np.swapaxes(data_array, 2, 3)
+                data_array = data_array.reshape(num_cases_per_batch, recordSize)
 
             data_batch_label = os.path.basename(data_folder)
-            #from URL, 1 byte label, 3072 bytes rgb data in planar order
-            
+
+            # from URL, 1 byte label, 3072 bytes rgb data in planar order
 
         
             print("The shape of allTheData {}".format(allTheData.shape))
@@ -225,7 +248,8 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         for idx, data in enumerate(data_array):
             #if idx > 2:
             #    break
-            
+
+            #print data_labels[idx]
             label = label_names[data_labels[idx]]
             #print "image {} label is {}".format(idx, label)
             if (idx % 1000 == 0):
@@ -319,11 +343,13 @@ def main_0(argv=None):
 def main(argv=None):
     print "Start"
     machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles = readConfig.readConfigFile("config.txt")
-    saveFrames = (0,)
+    saveFrames = (0, 2, 3, 6)
+    #saveFrames = (0,)
     quants = (10, 25, 37, 41, 46, 50)
+    #quants = (10, )
     bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
 
-    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="MNIST")
+    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="STL-10")
     # quit()
 
 if __name__ == "__main__":

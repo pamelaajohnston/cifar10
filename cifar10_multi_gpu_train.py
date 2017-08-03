@@ -1,17 +1,3 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 
 """A binary to train CIFAR-10 using multiple GPU's with synchronous updates.
 
@@ -64,6 +50,8 @@ tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 tf.app.flags.DEFINE_string('mylog_dir', '/Users/pam/Documents/data/CIFAR-10/tutorial/',
                            """Directory where to write my logs """)
+tf.app.flags.DEFINE_integer('network_architecture', 1,
+                            """The number of the network architecture to use (inference function) """)
 
 
 def tower_loss(scope):
@@ -79,7 +67,7 @@ def tower_loss(scope):
   images, labels = cifar10.distorted_inputs()
 
   # Build inference Graph.
-  logits = cifar10.inference_switch(images, 1)
+  logits = cifar10.inference_switch(images, FLAGS.network_architecture)
 
   # Build the portion of the Graph calculating the losses. Note that we will
   # assemble the total_loss using a custom function below.
@@ -159,8 +147,7 @@ def train():
         initializer=tf.constant_initializer(0), trainable=False)
 
     # Calculate the learning rate schedule.
-    num_batches_per_epoch = (cifar10.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN /
-                             FLAGS.batch_size)
+    num_batches_per_epoch = (cifar10.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size)
     decay_steps = int(num_batches_per_epoch * cifar10.NUM_EPOCHS_PER_DECAY)
 
     # Decay the learning rate exponentially based on the number of steps.
@@ -205,8 +192,7 @@ def train():
     # Add histograms for gradients.
     for grad, var in grads:
       if grad is not None:
-        summaries.append(
-            tf.histogram_summary(var.op.name + '/gradients', grad))
+        summaries.append(tf.histogram_summary(var.op.name + '/gradients', grad))
 
     # Apply the gradients to adjust the shared variables.
     apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
@@ -216,8 +202,7 @@ def train():
       summaries.append(tf.histogram_summary(var.op.name, var))
 
     # Track the moving averages of all trainable variables.
-    variable_averages = tf.train.ExponentialMovingAverage(
-        cifar10.MOVING_AVERAGE_DECAY, global_step)
+    variable_averages = tf.train.ExponentialMovingAverage(cifar10.MOVING_AVERAGE_DECAY, global_step)
     variables_averages_op = variable_averages.apply(tf.trainable_variables())
 
     # Group all updates to into a single train op.
@@ -261,10 +246,8 @@ def train():
         examples_per_sec = num_examples_per_step / duration
         sec_per_batch = duration / FLAGS.num_gpus
 
-        format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
-                      'sec/batch)')
-        print (format_str % (datetime.now(), step, loss_value,
-                             examples_per_sec, sec_per_batch))
+        format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f ' 'sec/batch)')
+        print (format_str % (datetime.now(), step, loss_value, examples_per_sec, sec_per_batch))
 
       if step % 100 == 0:
         summary_str = sess.run(summary_op)
@@ -348,7 +331,7 @@ def main_testall(argv=None):  # pylint: disable=unused-argument
             log.write("Evaluating {} on {}-trained network: {}\n".format(datadir, dir, precision))
             log.flush()
 
-def main(argv=None):  # pylint: disable=unused-argument
+def main_justFirstFrame(argv=None):  # pylint: disable=unused-argument
     #cifar10.maybe_download_and_extract()
     saveFrames = (0,)
     quants = (10, 25, 37, 41, 46, 50)
@@ -413,6 +396,65 @@ def main(argv=None):  # pylint: disable=unused-argument
             print("Evaluating {} on {}-trained network (initially trained on {}): {}".format(datadir, dir, FLAGS.prelearned_checkpoint, precision))
             log.write("Evaluating {} on {}-trained network: {}\n".format(datadir, dir, precision))
             log.flush()
+
+def main_justTheOne(argv=None):  # pylint: disable=unused-argument
+    x264 = '../x264/x264'
+    src_dir = os.path.join(FLAGS.data_dir, FLAGS.batches_dir)
+
+    FLAGS.run_once = True
+    #FLAGS.max_steps = 20
+    #FLAGS.checkpoint_dir = '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_train_mine/'
+    #FLAGS.eval_dir = '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_eval/'
+    train_dir_base = FLAGS.train_dir
+    data_dir_base = FLAGS.data_dir
+    batches_dir_base = FLAGS.batches_dir
+    eval_dir_base = FLAGS.eval_dir
+    checkpoint_dir_base = FLAGS.checkpoint_dir
+
+    #myDatadirs = []
+    #myDatadirs = image2vid.generateDatasets('', src_dir, FLAGS.data_dir, '', x264, '', saveFrames, quants)
+    #datasetNames = ["yuv", "y_quv", "y_squv", "interlaced"]
+    myDatadirs = ["yuv",]
+    logfile = os.path.join(FLAGS.mylog_dir, "log_results.txt")
+    log = open(logfile, 'w')
+    log.write("Here are the results \n")
+
+
+    my_data_dirs = []
+    for dir in myDatadirs:
+        myname = FLAGS.batches_dir + "_" + dir
+        name = os.path.join(FLAGS.data_dir, myname)
+        my_data_dirs.append(name)
+
+    print("For testing: These are my datadirs: {}".format(my_data_dirs))
+
+    for dir in myDatadirs:
+        myname = FLAGS.batches_dir + "_" + dir
+        name = os.path.join(FLAGS.data_dir, myname)
+
+        FLAGS.train_dir = train_dir_base  + "/train_" + dir
+        if tf.gfile.Exists(FLAGS.train_dir):
+            tf.gfile.DeleteRecursively(FLAGS.train_dir)
+        tf.gfile.MakeDirs(FLAGS.train_dir)
+        FLAGS.batches_dir = batches_dir_base  + "_" + dir
+        FLAGS.checkpoint_dir = FLAGS.train_dir
+        print("Train dir: {}".format(FLAGS.train_dir))
+        print("Data dir: {}".format(FLAGS.data_dir))
+        print("Batches dir: {}".format(FLAGS.batches_dir))
+        print("Checkpoint dir: {}".format(FLAGS.checkpoint_dir))
+        print("Prelearned checkpoint file: {}".format(FLAGS.prelearned_checkpoint))
+        print("Eval dir: {}".format(FLAGS.eval_dir))
+        train()
+        for idx, datadir in enumerate(myDatadirs):
+            FLAGS.batches_dir = batches_dir_base  + "_" + datadir
+            precision = cifar10_eval.evaluate()
+            print("Evaluating {} on {}-trained network (initially trained on {}): {}".format(datadir, dir, FLAGS.prelearned_checkpoint, precision))
+            log.write("Evaluating {} on {}-trained network: {}\n".format(datadir, dir, precision))
+            log.flush()
+
+def main(argv=None):
+    main_justTheOne(argv)
+
 
 if __name__ == '__main__':
   tf.app.run()
