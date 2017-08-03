@@ -272,7 +272,7 @@ def main_testall(argv=None):  # pylint: disable=unused-argument
     saveFrames = (0, 2, 3, 6)
     quants = (10, 25, 37, 41, 46, 50)
     bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
-    quants = (200000, 100000, 50000, 35000, 20000, 10000)
+    #quants = (200000, 100000, 50000, 35000, 20000, 10000)
     x264 = '../x264/x264'
     src_dir = os.path.join(FLAGS.data_dir, FLAGS.batches_dir)
 
@@ -454,7 +454,8 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
             log.flush()
 
 def main(argv=None):
-    main_justTheOne(argv)
+    #main_justTheOne(argv)
+    main_testall(argv)
 
 
 if __name__ == '__main__':
