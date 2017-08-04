@@ -52,6 +52,7 @@ tf.app.flags.DEFINE_string('mylog_dir', '/Users/pam/Documents/data/CIFAR-10/tuto
                            """Directory where to write my logs """)
 tf.app.flags.DEFINE_integer('network_architecture', 1,
                             """The number of the network architecture to use (inference function) """)
+
 tf.app.flags.DEFINE_string('single_dir', '_yuv',
                            """For defining the single directory """)
 
@@ -422,9 +423,6 @@ def main_justFirstFrame(argv=None):  # pylint: disable=unused-argument
             log.flush()
 
 def main_justTheOne(argv=None):  # pylint: disable=unused-argument
-    x264 = '../x264/x264'
-    src_dir = os.path.join(FLAGS.data_dir, FLAGS.batches_dir)
-
     FLAGS.run_once = True
     train_dir_base = FLAGS.train_dir
     data_dir_base = FLAGS.data_dir
