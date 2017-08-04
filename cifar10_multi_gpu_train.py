@@ -464,6 +464,7 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     tf.gfile.MakeDirs(FLAGS.train_dir)
     FLAGS.batches_dir = batches_dir_base  + "_" + FLAGS.single_dir
     FLAGS.checkpoint_dir = FLAGS.train_dir
+    print("The single_dir: {}".format(FLAGS.single_dir))
     print("Train dir: {}".format(FLAGS.train_dir))
     print("Data dir: {}".format(FLAGS.data_dir))
     print("Batches dir: {}".format(FLAGS.batches_dir))

@@ -51,6 +51,10 @@ def main(argv=None):
                 exe = app + " " + appargs
                 args = shlex.split(exe)
                 proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                print("Started subproc for ffmpeg")
+                #proc.wait()
+                print("Finished subproc for ffmpeg")
+
                 #out, err = proc.communicate()
 
                 # Next decode and get the qp stuff
@@ -59,6 +63,9 @@ def main(argv=None):
                 exe = app + " " + appargs
                 args = shlex.split(exe)
                 proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                print("Started subproc for ldecod")
+                proc.wait()
+                print("Finished subproc for ldecod")
                 out, err = proc.communicate()
                 #print("output is:")
                 out = out.split('\n')
