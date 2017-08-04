@@ -52,6 +52,8 @@ tf.app.flags.DEFINE_string('mylog_dir', '/Users/pam/Documents/data/CIFAR-10/tuto
                            """Directory where to write my logs """)
 tf.app.flags.DEFINE_integer('network_architecture', 1,
                             """The number of the network architecture to use (inference function) """)
+tf.app.flags.DEFINE_string('single_dir', '_yuv',
+                           """For defining the single directory """)
 
 
 def tower_loss(scope):
@@ -259,6 +261,27 @@ def train():
         checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)
 
+#      # evaluate on the test data periodically
+#      if step % 10 == 0:
+#        print("Evaluation time......!")
+#        images_test, labels_test = cifar10.inputs(eval_data=True)
+#        logits_test = cifar10.inference_switch(images_test, FLAGS.network_architecture)
+#        top_k_op = tf.nn.in_top_k(logits_test, labels_test, 1)
+#        num_iter = int(FLAGS.num_examples / FLAGS.batch_size)
+#        print("Number of iterations = {}".format(num_iter))
+#        true_count = 0  # Counts the number of correct predictions.
+#        total_sample_count = num_iter * FLAGS.batch_size
+#        print("total_sample_count = {}".format(total_sample_count))
+#        step = 0
+#        while step < num_iter:
+#            print("Step is {}".format(step))
+#            predictions = sess.run([top_k_op])
+#            true_count += np.sum(predictions)
+#            step += 1
+#        # Compute precision @ 1.
+#        precision = true_count / total_sample_count
+#        print('%s: precision @ 1 = %.5f' % (datetime.now(), precision))
+
 
 def main_orig(argv=None):  # pylint: disable=unused-argument
   cifar10.maybe_download_and_extract()
@@ -403,9 +426,6 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     src_dir = os.path.join(FLAGS.data_dir, FLAGS.batches_dir)
 
     FLAGS.run_once = True
-    #FLAGS.max_steps = 20
-    #FLAGS.checkpoint_dir = '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_train_mine/'
-    #FLAGS.eval_dir = '/Users/pam/Documents/data/CIFAR-10/tutorial/cifar10_eval/'
     train_dir_base = FLAGS.train_dir
     data_dir_base = FLAGS.data_dir
     batches_dir_base = FLAGS.batches_dir
@@ -415,47 +435,52 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     #myDatadirs = []
     #myDatadirs = image2vid.generateDatasets('', src_dir, FLAGS.data_dir, '', x264, '', saveFrames, quants)
     #datasetNames = ["yuv", "y_quv", "y_squv", "interlaced"]
-    myDatadirs = ["yuv",]
+    myDatadirs = [FLAGS.single_dir,]
     logfile = os.path.join(FLAGS.mylog_dir, "log_results.txt")
     log = open(logfile, 'w')
     log.write("Here are the results \n")
 
+    saveFrames = (0, 2, 3, 6)
+    quants = (10, 25, 37, 41, 46, 50)
+    myDatadirs = ["yuv", "y_quv", "y_squv", "interlaced"]
+    for quant in quants:
+        for idx, frame in enumerate(saveFrames):
+            name = "q{}_f{}".format(quant, saveFrames[idx])
+            myDatadirs.append(name)
 
-    my_data_dirs = []
-    for dir in myDatadirs:
-        myname = FLAGS.batches_dir + "_" + dir
-        name = os.path.join(FLAGS.data_dir, myname)
-        my_data_dirs.append(name)
+    print(myDatadirs)
+    logfile = os.path.join(FLAGS.mylog_dir, "log.txt")
+    log = open(logfile, 'w')
+    log.write("Here are the results \n")
 
-    print("For testing: These are my datadirs: {}".format(my_data_dirs))
+    print("For testing: These are my datadirs: {}".format(myDatadirs))
 
-    for dir in myDatadirs:
-        myname = FLAGS.batches_dir + "_" + dir
-        name = os.path.join(FLAGS.data_dir, myname)
+    myname = FLAGS.batches_dir + "_" + FLAGS.single_dir
+    name = os.path.join(FLAGS.data_dir, myname)
 
-        FLAGS.train_dir = train_dir_base  + "/train_" + dir
-        if tf.gfile.Exists(FLAGS.train_dir):
-            tf.gfile.DeleteRecursively(FLAGS.train_dir)
-        tf.gfile.MakeDirs(FLAGS.train_dir)
-        FLAGS.batches_dir = batches_dir_base  + "_" + dir
-        FLAGS.checkpoint_dir = FLAGS.train_dir
-        print("Train dir: {}".format(FLAGS.train_dir))
-        print("Data dir: {}".format(FLAGS.data_dir))
-        print("Batches dir: {}".format(FLAGS.batches_dir))
-        print("Checkpoint dir: {}".format(FLAGS.checkpoint_dir))
-        print("Prelearned checkpoint file: {}".format(FLAGS.prelearned_checkpoint))
-        print("Eval dir: {}".format(FLAGS.eval_dir))
-        train()
-        for idx, datadir in enumerate(myDatadirs):
-            FLAGS.batches_dir = batches_dir_base  + "_" + datadir
-            precision = cifar10_eval.evaluate()
-            print("Evaluating {} on {}-trained network (initially trained on {}): {}".format(datadir, dir, FLAGS.prelearned_checkpoint, precision))
-            log.write("Evaluating {} on {}-trained network: {}\n".format(datadir, dir, precision))
-            log.flush()
+    FLAGS.train_dir = train_dir_base  + "/train_" + FLAGS.single_dir
+    if tf.gfile.Exists(FLAGS.train_dir):
+        tf.gfile.DeleteRecursively(FLAGS.train_dir)
+    tf.gfile.MakeDirs(FLAGS.train_dir)
+    FLAGS.batches_dir = batches_dir_base  + "_" + FLAGS.single_dir
+    FLAGS.checkpoint_dir = FLAGS.train_dir
+    print("Train dir: {}".format(FLAGS.train_dir))
+    print("Data dir: {}".format(FLAGS.data_dir))
+    print("Batches dir: {}".format(FLAGS.batches_dir))
+    print("Checkpoint dir: {}".format(FLAGS.checkpoint_dir))
+    print("Prelearned checkpoint file: {}".format(FLAGS.prelearned_checkpoint))
+    print("Eval dir: {}".format(FLAGS.eval_dir))
+    train()
+    for idx, datadir in enumerate(myDatadirs):
+        FLAGS.batches_dir = batches_dir_base  + "_" + datadir
+        precision = cifar10_eval.evaluate()
+        print("Evaluating {} on {}-trained network (initially trained on {}): {}".format(datadir, dir, FLAGS.prelearned_checkpoint, precision))
+        log.write("Evaluating {} on {}-trained network: {}\n".format(datadir, dir, precision))
+        log.flush()
 
 def main(argv=None):
-    #main_justTheOne(argv)
-    main_testall(argv)
+    main_justTheOne(argv)
+    #main_testall(argv)
 
 
 if __name__ == '__main__':

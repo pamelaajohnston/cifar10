@@ -74,7 +74,7 @@ def read_cifar10(filename_queue):
   reader = tf.FixedLengthRecordReader(record_bytes=record_bytes)
   result.key, value = reader.read(filename_queue)
 
-  print("The value from reading: {} \n".format(value))
+  #print("The value from reading: {} \n".format(value))
 
   # Convert from a string to a vector of uint8 that is record_bytes long.
   record_bytes = tf.decode_raw(value, tf.uint8)
