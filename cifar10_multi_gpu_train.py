@@ -473,8 +473,8 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     for idx, datadir in enumerate(myDatadirs):
         FLAGS.batches_dir = batches_dir_base  + "_" + datadir
         precision = cifar10_eval.evaluate()
-        print("Evaluating {} on {}-trained network (initially trained on {}): {}".format(datadir, dir, FLAGS.prelearned_checkpoint, precision))
-        log.write("Evaluating {} on {}-trained network: {}\n".format(datadir, dir, precision))
+        print("Evaluating {} on {}-trained network): {}".format(datadir, FLAGS.single_dir, FLAGS.prelearned_checkpoint, precision))
+        log.write("Evaluating {} on {}-trained network: {}\n".format(datadir, FLAGS.single_dir, precision))
         log.flush()
 
 def main(argv=None):
