@@ -853,7 +853,7 @@ def inference_5(images):
                                          shape=[3, 3, 128, 256],
                                          stddev=5e-2,
                                          wd=0.0)
-    conv = tf.nn.conv2d(pool1, kernel, [1, 1, 1, 1], padding='SAME')
+    conv = tf.nn.conv2d(pool2, kernel, [1, 1, 1, 1], padding='SAME')
     biases = _variable_on_cpu('biases', [256], tf.constant_initializer(0.1))
     bias = tf.nn.bias_add(conv, biases)
     conv3 = tf.nn.relu(bias, name=scope.name)
