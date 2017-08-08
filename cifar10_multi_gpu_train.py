@@ -148,6 +148,7 @@ def train():
     global_step = tf.get_variable(
         'global_step', [],
         initializer=tf.constant_initializer(0), trainable=False)
+    #print("The global step is {}".format(global_step))
 
     # Calculate the learning rate schedule.
     num_batches_per_epoch = (cifar10.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size)
@@ -162,6 +163,7 @@ def train():
 
     # Create an optimizer that performs gradient descent.
     opt = tf.train.GradientDescentOptimizer(lr)
+    #opt = tf.train.AdamOptimizer(lr)
 
     # Calculate the gradients for each model tower.
     tower_grads = []
