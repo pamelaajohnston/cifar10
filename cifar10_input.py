@@ -85,7 +85,8 @@ def read_cifar10(filename_queue):
   result.label = tf.cast(tf.slice(record_bytes, [0], [label_bytes]), tf.int32)
 
   # The STL labels run from 1-10 will this make a difference? Better to normalise just in case...
-  result.label = result.label - 1
+  #result.label = result.label - 1
+  #print("Here is the label: {}, hooray!".format(result.label))
 
   # The remaining bytes after the label represent the image, which we reshape
   # from [depth * height * width] to [depth, height, width].
