@@ -505,4 +505,78 @@ def interlace(data, width, height):
     return yuv
 
 
+# Nearest neighbour filter
+def nearestNeighbourFilter(data, width, height, initMinSad = 256):
+    origType = data.dtype
+    pic_planar = np.array(data).astype(int)
+    picture = pic_planar.reshape(3, width, height)
+    picture_dash = picture.copy()
+    # mask = mask.reshape(3, width, height)
+
+
+    kw = 3
+    kh = 3
+    half_kw = (kw - 1) / 2
+    half_kh = (kh - 1) / 2
+
+    search_h = 3
+    search_w = 3
+    half_sw = (search_w - 1) / 2
+    half_sh = (search_h - 1) / 2
+
+    limit = 3
+    count = 0
+    for k in range(0, 3):
+        c = picture[k, :, :]
+        c_dash = picture_dash[k, :, :]
+        # c = picture[0, :, :]
+        # c_dash = picture_dash[0, :, :]
+
+        for j in range(half_kh, height - half_kh):
+            for i in range(half_kw, width - half_kw):
+                roi_t = j - half_kh
+                roi_b = j + half_kh + 1
+                roi_l = i - half_kw
+                roi_r = i + half_kw + 1
+                roi = c[roi_t:roi_b, roi_l:roi_r]
+
+                # motion search
+                minError = initMinSad
+                minjj = j
+                minii = i
+                hSearch = range(j - half_sh, (j + half_sh + 1))
+                wSearch = range(i - half_sw, (i + half_sw + 1))
+
+                # print("Search radius: {}; {}".format(half_sh, hSearch))
+                # print("Search radius: {}; {}".format(half_sw, wSearch))
+
+
+
+                minjj = j
+                minii = i
+                for jj in hSearch:
+                    if jj < half_kh or jj > height - (half_kh + 1):
+                        continue
+                    for ii in wSearch:
+                        # print("Point ({}, {}, {}); cf: ({}, {}, {});".format(k, i, j, k, ii, jj))
+                        if ii < half_kw or ii > width - (half_kw + 1):
+                            continue
+                        if jj == j and ii == i:
+                            continue
+                        search_area = c[(jj - half_kh):(jj + half_kh + 1), (ii - half_kw):(ii + half_kw + 1)]
+                        error = np.sum(np.absolute(np.subtract(roi, search_area)))
+                        # print("Error: {}; minError {}".format(error, minError))
+                        if error < minError:
+                            minError = error
+                            selectedArea = search_area
+                            minjj = jj
+                            minii = ii
+
+                c_dash[j, i] = (c[j, i] + c[minjj, minii]) / 2
+                # print("c({}, {}): {}; cf({}, {}): {}; result: {}".format(i, j, c[j,i], ii, jj, c[jj, ii], c_dash[j,i]))
+
+                # picture_dash[1, j, i] = (picture[1, j, i] + picture[1, jj, ii])/2
+                # picture_dash[2, j, i] = (picture[2, j, i] + picture[2, jj, ii])/2
+    return picture_dash
+
 

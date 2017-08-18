@@ -15,11 +15,14 @@ import time
 #import shutil as shutil
 
 
-def processSingleImage(data, w, h, x264, saveFrames, quants, logFile, srcFile, label, isRGB=True):
+def processSingleImage(data, w, h, x264, saveFrames, quants, logFile, srcFile, label, isRGB=True, normalise=True):
     if isRGB:
         datayuv = functions.planarRGB_2_planarYUV(data, w, h)
     else:
-        datayuv = data.copy()
+        multiplier = 1
+        if normalise:
+            multiplier = 8
+        datayuv = data.copy() * 8
     dataQyuv = datayuv.copy()
     dataQyuv = functions.quantiseUV(dataQyuv, w, h)
     
@@ -37,6 +40,25 @@ def processSingleImage(data, w, h, x264, saveFrames, quants, logFile, srcFile, l
         'interlaced': dataInterlaced
     }
     getVideoCompressedImages(datayuv, w, h, frame_dict, x264, saveFrames, quants, logFile, srcFile, label)
+
+    return frame_dict
+
+
+def processSingleImage_oneType(data, w, h, x264, saveFrames, quants, logFile, srcFile, label, isRGB=True, normalise=True):
+    if isRGB:
+        datayuv = functions.planarRGB_2_planarYUV(data, w, h)
+    else:
+        multiplier = 1
+        if normalise:
+            multiplier = 8
+        datayuv = data.copy() * 8
+
+    dataNNyuv = datayuv.copy()
+    dataNNyuv = functions.nearestNeighbourFilter(dataNNyuv, w, h)
+
+    frame_dict = {
+        'nn': dataNNyuv,
+    }
 
     return frame_dict
 
@@ -84,7 +106,7 @@ dstdatasetdir = '/Users/pam/Documents/data/CIFAR-10/dataset'
 x264 = "../x264/x264"
 
 
-def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="CIFAR10"):
+def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="CIFAR10", justOneDataSet = True):
 
     datadir = srcdatasetdir + "/"
 
@@ -113,6 +135,13 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         channels = 1
 
     if dataSet == "STL-10":
+        dw = 112
+        dh = 112
+        width = 96
+        height = 96
+        channels = 3
+
+    if dataSet == "PAMS_CUSTOM":
         dw = 112
         dh = 112
         width = 96
@@ -156,6 +185,9 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
 
         if dataSet == "STL-10":
             label_names = ['zero', 'airplane', 'bird', 'car', 'cat', 'deer', 'dog', 'horse', 'monkey', 'ship', 'truck']
+
+        if dataSet == "PAMS_CUSTOM":
+            label_names = ['airplane', 'bird', 'car', 'cat', 'deer', 'dog', 'horse', 'monkey', 'ship', 'truck']
 
         for idx, data_folder in enumerate(data_folders):
             data_folders[idx] = datadir + data_folder
@@ -213,6 +245,9 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
                 data_array = data_array.reshape(num_cases_per_batch, channels, height, width)
                 data_array = np.swapaxes(data_array, 2, 3)
                 data_array = data_array.reshape(num_cases_per_batch, recordSize)
+            if dataSet == "PAMS_CUSTOM":
+                data_labels = allTheData[:, 0].copy()
+                data_array = allTheData[:, 1:].copy()
 
             data_batch_label = os.path.basename(data_folder)
 
@@ -222,13 +257,15 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
             print("The shape of allTheData {}".format(allTheData.shape))
             print("The shape of data_labels {}".format(data_labels.shape))
             print("The shape of data_array {}".format(data_array.shape))
-            
-        datasetNames = ["yuv", "y_quv", "y_squv", "interlaced"]
-        for quant in quants:
-            for idx, frame in enumerate(saveFrames):
-                name = "q{}_f{}".format(quant, saveFrames[idx])
-                datasetNames.append(name)
-        #datasetNames = ["yuv"]
+
+        if justOneDataSet == False:
+            datasetNames = ["yuv", "y_quv", "y_squv", "interlaced"]
+            for quant in quants:
+                for idx, frame in enumerate(saveFrames):
+                    name = "q{}_f{}".format(quant, saveFrames[idx])
+                    datasetNames.append(name)
+        else:
+            datasetNames = ["nn"]
         
         
 
@@ -241,7 +278,7 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         #dataset = np.ndarray(shape=(len(datasetNames), num_cases_per_batch, (channels*width*2*height*2)), dtype=np.float32)
 
         isRGB = True
-        if dataSet == "MNIST":
+        if dataSet == "MNIST" or dataSet == "PAMS_CUSTOM":
             isRGB = False
 
         #The image loop
@@ -268,8 +305,10 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
 
 
 
-
-            frame_dict = processSingleImage(data, w, h, x264, saveFrames, quants, log, data_batch_label, label, isRGB=isRGB)
+            if justOneDataSet == False:
+                frame_dict = processSingleImage(data, w, h, x264, saveFrames, quants, log, data_batch_label, label, isRGB=isRGB)
+            else:
+                frame_dict = processSingleImage_oneType(data, w, h, x264, saveFrames, quants, log, data_batch_label, label, isRGB=isRGB)
             #print "Here are the keys: "
             #print frame_dict.keys()
             # sort the frames into their datasets
@@ -340,7 +379,7 @@ def main_0(argv=None):
     #quit()
 
 
-def main(argv=None):
+def main_withConfig(argv=None):
     print "Start"
     machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles = readConfig.readConfigFile("config.txt")
     saveFrames = (0, 2, 3, 6)
@@ -350,6 +389,29 @@ def main(argv=None):
     bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
 
     generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="STL-10")
+    # quit()
+
+def main(argv=None):
+    print "Start"
+    #machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles = readConfig.readConfigFile("config.txt")
+      # /Volumes/LaCie/stl10_binary # /Volumes/LaCie/stl10_binary/dataset #  # ../x264/x264 #
+    machine = "RG45609"
+    srcdatasetdir = "/Volumes/LaCie/stl10_binary/genFromQP25/q25_f0"
+    dstdatasetdir = "/Volumes/LaCie/stl10_binary/genFromQP25/dataset"
+    srcdatasetdir = "/Volumes/LaCie/stl10_binary/constantQuant/refactored_anew/datasetstl10_binary_yuv"
+    dstdatasetdir = "/Volumes/LaCie/stl10_binary/constantQuant/refactored_anew/dataset_nn"
+    copytodir = ""
+    x264 = "../x264/x264"
+    batchfiles = ""
+
+
+    saveFrames = (0, 2, 3, 6)
+    #saveFrames = (0,)
+    quants = (10, 25, 37, 41, 46, 50)
+    #quants = (10, )
+    bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
+
+    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="PAMS_CUSTOM")
     # quit()
 
 if __name__ == "__main__":
