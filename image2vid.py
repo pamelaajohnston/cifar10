@@ -51,7 +51,8 @@ def processSingleImage_oneType(data, w, h, x264, saveFrames, quants, logFile, sr
         multiplier = 1
         if normalise:
             multiplier = 8
-        datayuv = data.copy() * 8
+        datayuv = np.round(data * 8)
+        #print("data[0]: {}; datayuv[0] {}".format(data[0], datayuv[0]))
 
     dataNNyuv = datayuv.copy()
     dataNNyuv = functions.nearestNeighbourFilter(dataNNyuv, w, h)
@@ -106,7 +107,7 @@ dstdatasetdir = '/Users/pam/Documents/data/CIFAR-10/dataset'
 x264 = "../x264/x264"
 
 
-def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="CIFAR10", justOneDataSet = True):
+def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="CIFAR10", isRGB=True, justOneDataSet=True):
 
     datadir = srcdatasetdir + "/"
 
@@ -277,8 +278,8 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
         # if doubling image
         #dataset = np.ndarray(shape=(len(datasetNames), num_cases_per_batch, (channels*width*2*height*2)), dtype=np.float32)
 
-        isRGB = True
-        if dataSet == "MNIST" or dataSet == "PAMS_CUSTOM":
+        #isRGB = True
+        if dataSet == "MNIST":
             isRGB = False
 
         #The image loop
@@ -312,11 +313,14 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
             #print "Here are the keys: "
             #print frame_dict.keys()
             # sort the frames into their datasets
+            #STUPID STUPID numpy round, rounding 0.5 to nearest even number - who does that?
+            rounder = (pixel_depth / 2) - 1
             for nameIdx, name in enumerate(datasetNames):
                 frame = np.asarray(frame_dict[name])
                 frame = frame.reshape((channels*w*h), )
                 #normalise
-                frame = (frame.astype(float) - pixel_depth / 2) / pixel_depth
+                frame = np.round((frame.astype(float) - rounder) / pixel_depth)
+                #print("rounder: {} frame[0]: {}".format(rounder, frame[0]))
                 #print "name {} the frame shape: {}".format(name, frame.shape)
                 dataset[nameIdx, idx, :]= frame
 
@@ -357,7 +361,7 @@ def generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, bat
             mylen = len(myByteArray)
             #print "The shape of the data now {}".format(myArray.shape)
             #print "The length of the data now {}".format(mylen)
-            force = False
+            force = True
             if os.path.exists(binFileName) and not force:
                 # You may override by setting force=True.
                 print('%s already present - Skipping bin saving.' % binFileName)
@@ -411,7 +415,7 @@ def main(argv=None):
     #quants = (10, )
     bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
 
-    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="PAMS_CUSTOM")
+    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="PAMS_CUSTOM", isRGB=False, justOneDataSet=True)
     # quit()
 
 if __name__ == "__main__":

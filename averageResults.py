@@ -70,8 +70,8 @@ datadir = '/Users/pam/Documents/data/stl10/'
 fileBaseName = 'results_nw1.txt'
 averagesFileName = 'results_nw1_averages.txt'
 averagesFileName = 'results_nw1_maxes.txt'
-fileBaseName = 'results_nwa3.txt'
-averagesFileName = 'results_nwa3_averages.txt'
+fileBaseName = 'results_nwa3_qp25dataset.txt'
+averagesFileName = 'results_nwa3_qp25dataset_averages.txt'
 #averagesFileName = 'results_nwa3_maxes.txt'
 numTrys = 3
 
