@@ -402,8 +402,8 @@ def main(argv=None):
     machine = "RG45609"
     srcdatasetdir = "/Volumes/LaCie/stl10_binary/genFromQP25/q25_f0"
     dstdatasetdir = "/Volumes/LaCie/stl10_binary/genFromQP25/dataset"
-    srcdatasetdir = "/Volumes/LaCie/stl10_binary/constantQuant/refactored_anew/datasetstl10_binary_yuv"
-    dstdatasetdir = "/Volumes/LaCie/stl10_binary/constantQuant/refactored_anew/dataset_nn"
+    #srcdatasetdir = "/Volumes/LaCie/stl10_binary/constantQuant/refactored_anew/datasetstl10_binary_yuv"
+    #dstdatasetdir = "/Volumes/LaCie/stl10_binary/constantQuant/refactored_anew/dataset_nn"
     copytodir = ""
     x264 = "../x264/x264"
     batchfiles = ""
@@ -415,7 +415,7 @@ def main(argv=None):
     #quants = (10, )
     bitrates = (200000, 100000, 50000, 35000, 20000, 10000)
 
-    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="PAMS_CUSTOM", isRGB=False, justOneDataSet=True)
+    generateDatasets(machine, srcdatasetdir, dstdatasetdir, copytodir, x264, batchfiles, saveFrames, quants, dataSet="PAMS_CUSTOM", isRGB=False, justOneDataSet=False)
     # quit()
 
 if __name__ == "__main__":
