@@ -74,6 +74,12 @@ fileBaseName = 'results_nwa3_test16.txt'
 averagesFileName = 'results_nwa3_qp25dataset_averages.txt'
 averagesFileName = 'results_nwa3_test16_averages.txt'
 #averagesFileName = 'results_nwa3_maxes.txt'
+datadir = '/Users/pam/Documents/data/stl10/local/'
+fileBaseName = 'results_nwa3_test16_10k.txt'
+averagesFileName = 'results_nwa3_test16_10k_averages.txt'
+datadir = '/Users/pam/Documents/data/stl10/'
+fileBaseName = 'results_nwa3_qp25dataset_10k_27Aug.txt'
+averagesFileName = 'results_nwa3_qp25dataset_10k_27Aug_averages.txt'
 numTrys = 3
 
 def main(argv=None):
