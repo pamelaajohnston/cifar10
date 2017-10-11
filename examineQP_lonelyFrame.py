@@ -10,7 +10,7 @@ datadir = '/Users/pam/Documents/data/ILSVRC/ILSVRC_new/'
 videoFilesBase = 'Data/VID/snippets/train/ILSVRC2017_VID_train_0000/'
 annotFilesBase = 'Annotations/VID/train/ILSVRC2017_VID_train_0000/'
 baseFileName = 'ILSVRC2017_train_00000000'
-baseFileName = 'ILSVRC2017_train_00012000'
+baseFileName = 'ILSVRC2017_train_00041000'
 x264 = "x264"
 ldecod = "/Users/pam/Documents/dev/JM/bin/ldecod.exe"
 ldecod = "ldecod"
@@ -58,17 +58,13 @@ def main(argv=None):
     #print(qpVals)
 
     mbNos = []
-    allqps = []
     qps = []
     frameNos = []
-    #frameMbNos = []
-    frameQps = []
     for line in out:
         if 'MB no' in line:
             words = line.split(' ')
             mbNos.append(int(words[2]))
             qps.append(int(words[4]))
-            allqps.append(int(words[4]))
         else:
             words = line.split(' ')
             #print("{}".format(words[0]))
@@ -77,13 +73,12 @@ def main(argv=None):
                 numMbs = len(qps)
                 frameNos.append(picnum)
                 frameNos.append(qps)
-                frameQps.append(qps)
                 mbNos = []
                 qps = []
 
     # re-order them for frames sake (stoopid b-frames!)
     entryLength = numMbs + 1
-    print("Each line is {} long".format(entryLength))
+    #print("Each line is {} long".format(entryLength))
     data = []
     for sublist in frameNos:
         #print("The sublist is: {}".format(sublist))
@@ -100,15 +95,15 @@ def main(argv=None):
     data = np.array(data)
     data = data.reshape((-1, entryLength))
     frameNos = data[: , 0]
-    qps = data[:, 1:]
-    print("The unordered framenos: {}".format(frameNos))
+    #qps = data[:, 1:]
+    #print("The unordered framenos: {}".format(frameNos))
 
-    print("Shape of the qps {}".format(qps.shape))
+    #print("Shape of the qps {}".format(qps.shape))
 
-    print("Data before {}".format(data[1]))
+    #print("Data before {}".format(data[1]))
     i = np.argsort(frameNos)
     data = data[i, :]
-    print("Data after  {}".format(data[1]))
+    #print("Data after  {}".format(data[1]))
 
     qps = data[:, 1:]
     #print("The frame qps  {}".format(qps[displayFrameNo]))
@@ -123,7 +118,12 @@ def main(argv=None):
     myval = etree.find('size')
     size = ([int(it.text) for it in myval])
     width, height = size
-    #print("The dimensions: {} by {}".format(width, height))
+    print("The dimensions: {} by {}".format(width, height))
+
+    xmin = 0
+    xmax = width-1
+    ymin = 0
+    ymax = height-1
 
     objects = etree.findall("object")
     for object_iter in objects:
@@ -146,12 +146,12 @@ def main(argv=None):
     #print("The frame qps  {}".format(qps[displayFrameNo]))
     #print("Bounding box: ({},{}) to ({},{})".format(xminMB, yminMB, xmaxMB, ymaxMB))
 
-    frameMBs = mb_width * mb_height
+    #frameMBs = mb_width * mb_height
 
     objectqp = []
     frameNo = displayFrameNo
-    firstMB = (yminMB * mb_width) +xminMB
-    lastMB = (ymaxMB * mb_width) + xmaxMB
+    #firstMB = (yminMB * mb_width) +xminMB
+    #lastMB = (ymaxMB * mb_width) + xmaxMB
     for y in range(yminMB, ymaxMB):
         for x in range(xminMB, xmaxMB):
             objectqp.append(qps[frameNo, y, x])

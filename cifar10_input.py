@@ -15,19 +15,26 @@ import tensorflow as tf
 # Process images of this size. Note that this differs from the original CIFAR
 # image size of 32 x 32. If one alters this number, then the entire model
 # architecture will change and any model would need to be retrained.
-#IMAGE_SIZE = 24
-#INPUT_IMAGE_SIZE = 32
 #INPUT_IMAGE_SIZE = 64
 #IMAGE_SIZE = 48
-IMAGE_SIZE = 96
-INPUT_IMAGE_SIZE = 96
+##For STL-10
+#IMAGE_SIZE = 96
+#INPUT_IMAGE_SIZE = 96
+## For CIFAR-10 (because random 24x24 crops are the way to go)
+IMAGE_SIZE = 24
+INPUT_IMAGE_SIZE = 32
 
 # Global constants describing the CIFAR-10 data set.
 NUM_CLASSES = 10
+## For CIFAR-10 originals
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50000
 #NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10410
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 2590
+## This is the labelled stl-10 set that I prepared
+#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10410
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 2590
+
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 250000
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 50000
 
 
 def read_cifar10(filename_queue):
@@ -57,8 +64,7 @@ def read_cifar10(filename_queue):
   result = CIFAR10Record()
 
   # Dimensions of the images in the CIFAR-10 dataset.
-  # See http://www.cs.toronto.edu/~kriz/cifar.html for a description of the
-  # input format.
+  # See http://www.cs.toronto.edu/~kriz/cifar.html for a description of the input format.
   label_bytes = 1  # 2 for CIFAR-100
   result.height = INPUT_IMAGE_SIZE
   result.width = INPUT_IMAGE_SIZE
@@ -149,11 +155,14 @@ def distorted_inputs(data_dir, batch_size):
     images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3] size.
     labels: Labels. 1D tensor of [batch_size] size.
   """
+  # for CIFAR-10
   filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i) for i in xrange(1, 6)]
   # for MNIST
   filenames = [os.path.join(data_dir, 'train-images-idx3-ubyte.bin'),]
   # for STL-10
   filenames = [os.path.join(data_dir, 'train_X.bin'),]
+  # for CIFAR-10_munge (which is my munged together dataset)
+  filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i) for i in xrange(1, 26)]
 
 
   for f in filenames:
