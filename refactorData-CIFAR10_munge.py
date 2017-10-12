@@ -41,7 +41,8 @@ def main(argv=None):
 
     print("{} train files, {} records per train file, {} bytes per record".format(numTrainFiles, recordsPerFile, recordSize))
     # adding one to recordSize because I'm adding an extra label to show quant
-    bigFatTrainArray = np.empty((totalTrainRecords, recordSize+1))
+    #bigFatTrainArray = np.empty((totalTrainRecords, recordSize+1))
+    bigFatTrainArray = np.empty((totalTrainRecords, recordSize))
 
     for dataDirIdx, dataDir in enumerate(dataDirs):
         for trainFileNameIdx, trainFileName in enumerate(trainFileNames):
@@ -56,7 +57,7 @@ def main(argv=None):
                 print("Putting the data in from index {} to {}".format(startIdx, endIdx))
                 aSecondLabel = np.full((num_images), qps[dataDirIdx])
                 print(fileData[0, 0:28])
-                fileData = np.insert(fileData, 0, aSecondLabel, axis=1)
+                #fileData = np.insert(fileData, 0, aSecondLabel, axis=1)
                 print(fileData[0, 0:28])
                 bigFatTrainArray[startIdx:endIdx, :] = fileData
 
@@ -80,7 +81,8 @@ def main(argv=None):
 
     print("{} test files, {} records per train file, {} bytes per record".format(numTestFiles, recordsPerFile, recordSize))
     # adding one to recordSize because I'm adding an extra label to show quant
-    bigFatTestArray = np.empty((totalTestRecords, recordSize+1))
+    #bigFatTestArray = np.empty((totalTestRecords, recordSize+1))
+    bigFatTestArray = np.empty((totalTestRecords, recordSize))
 
     for dataDirIdx, dataDir in enumerate(dataDirs):
         for testFileNameIdx, testFileName in enumerate(testFileNames):
@@ -94,7 +96,7 @@ def main(argv=None):
                 print("startIdx = {} * {} * {}".format(dataDirIdx, testFileNameIdx, recordsPerFile))
                 print("Putting the data in from index {} to {}".format(startIdx, endIdx))
                 aSecondLabel = np.full((num_images), qps[dataDirIdx])
-                fileData = np.insert(fileData, 0, aSecondLabel, axis=1)
+                #fileData = np.insert(fileData, 0, aSecondLabel, axis=1)
                 bigFatTestArray[startIdx:endIdx, :] = fileData
 
     np.random.shuffle(bigFatTestArray)

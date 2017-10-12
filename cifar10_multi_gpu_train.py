@@ -447,7 +447,7 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     quants = (10, 25, 37, 50)
     #myDatadirs = ["yuv", "nn", "y_quv", "y_squv", "interlaced"]
     myDatadirs = ["yuv", "y_quv", "y_squv", "interlaced"]
-    myDatadirs = ["yuv",]
+    myDatadirs = ["yuv", "all"]
     for quant in quants:
         for idx, frame in enumerate(saveFrames):
             name = "q{}_f{}".format(quant, saveFrames[idx])
