@@ -19,10 +19,10 @@ recordSize = recordDataSize + labelSize
 
 
 datasrcdir = '/Users/pam/Documents/data/CIFAR-10_munge'
-dataDirs = ['cifar-10-batches-bin_yuv', 'cifar-10-batches-bin_q10_f0', 'cifar-10-batches-bin_q25_f0', 'cifar-10-batches-bin_q37_f0', 'cifar-10-batches-bin_q50_f0']
-qps = [0, 10, 25, 37, 50]
-datadstdir = '/Users/pam/Documents/data/CIFAR-10_munge/cifar-10-batches-bin_all'
-mapFileName = 'map_CIFAR-10_munge.txt'
+dataDirs = ['cifar-10-batches-bin_yuv', 'cifar-10-batches-bin_q10_f0', 'cifar-10-batches-bin_q25_f0', 'cifar-10-batches-bin_q37_f0', 'cifar-10-batches-bin_q41_f0', 'cifar-10-batches-bin_q46_f0', 'cifar-10-batches-bin_q50_f0']
+qps = [0, 10, 25, 37, 41, 46, 50]
+datadstdir = '/Users/pam/Documents/data/CIFAR-10_munge/cifar-10-batches-bin_all2'
+mapFileName = 'map_CIFAR-10_munge_all2.txt'
 readMap = True
 trainFileNames = ['data_batch_1.bin', 'data_batch_2.bin', 'data_batch_3.bin','data_batch_4.bin','data_batch_5.bin']
 #trainFileNames = ['data_batch_1.bin',]
