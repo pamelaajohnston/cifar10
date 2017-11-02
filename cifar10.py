@@ -246,6 +246,8 @@ def inference_switch(images, type=1):
         return inference_5(images)
     elif type == 6:
         return inference_6(images)
+    elif type == 7:
+        return inference_7(images)
 
 
 def inference(images):
