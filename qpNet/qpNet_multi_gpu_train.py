@@ -291,7 +291,7 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     myDatadirs = [FLAGS.single_dir,]
     logfile = os.path.join(FLAGS.mylog_dir, "log_results.txt")
     log = open(logfile, 'w')
-    log.write("Here are the results \n")
+    log.write("Here are the results for network architecture {}\n".format(FLAGS.network_architecture))
 
     quants = xrange(0, 50, 7)
     quants = xrange(0, 7)
@@ -322,6 +322,7 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     print("Batches dir: {}".format(FLAGS.batches_dir))
     print("Checkpoint dir: {}".format(FLAGS.checkpoint_dir))
     print("Eval dir: {}".format(FLAGS.eval_dir))
+    print("Network Architecture: {}".format(FLAGS.network_architecture))
 
     train()
 

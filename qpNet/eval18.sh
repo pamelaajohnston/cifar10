@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=7 python qpNet/qpNet_eval.py --checkpoint_dir /home/1609098/dev/local/qp_train --data_dir /home/1609098/dev/qpDataset --eval_dir /home/1609098/dev/local/eval --mylog_dir /home/1609098/dev/local --network_architecture 1 --num_examples 100
