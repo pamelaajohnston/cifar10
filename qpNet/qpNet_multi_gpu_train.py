@@ -341,10 +341,10 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
         else:
             confusionMatrix = confusionMatrix + cm
         log.flush()
-        if idx > 0:
-            break
     print("The overall confusion matrix is: \n {}".format(confusionMatrix))
     log.write("The overall confusion matrix is: \n {}".format(confusionMatrix))
+    log.flush()
+
 
 def main(argv=None):
     main_justTheOne(argv)
