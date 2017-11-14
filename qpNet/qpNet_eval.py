@@ -26,6 +26,8 @@ import numpy as np
 import tensorflow as tf
 
 import qpNet
+import qpNet_input
+#import liftedTFfunctions
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -96,15 +98,17 @@ def eval_once_orig(saver, summary_writer, top_k_op, summary_op):
 
 
 
-def eval_once(saver, summary_writer, top_k_op, summary_op):
+def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
+#def eval_once(saver, summary_writer, top_k_op, summary_op):
+
     """Run Eval once.
-        
-        Args:
-        saver: Saver.
-        summary_writer: Summary writer.
-        top_k_op: Top K op.
-        summary_op: Summary op.
-        """
+
+    Args:
+    saver: Saver.
+    summary_writer: Summary writer.
+    top_k_op: Top K op.
+    summary_op: Summary op.
+    """
     with tf.Session() as sess:
         ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
@@ -131,12 +135,23 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
             step = 0
             while step < num_iter and not coord.should_stop():
                 predictions = sess.run([top_k_op])
+                batchConfusionMatrix = sess.run([gen_confusionMatrix])
+                if step == 0:
+                    #confusionMatrix = np.asarray(tf.unstack(batchConfusionMatrix))
+                    confusionMatrix = batchConfusionMatrix
+                else:
+                    #print("Adding the confusion matrix to the existing one...")
+                    confusionMatrix = np.add(confusionMatrix, batchConfusionMatrix)
+                #print("Here's the batchCM:\n {}".format(batchConfusionMatrix))
+                #print("Here's the cm:\n {}".format(confusionMatrix))
                 true_count += np.sum(predictions)
                 step += 1
 
             # Compute precision @ 1.
             precision = true_count / total_sample_count
             print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
+            #print("Unstacking the confusion matrix")
+            #cm = tf.unstack(confusionMatrix)
 
             summary = tf.Summary()
             summary.ParseFromString(sess.run(summary_op))
@@ -147,10 +162,13 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
 
         coord.request_stop()
         coord.join(threads, stop_grace_period_secs=10)
-        return precision
+        #return precision
+        return precision, confusionMatrix
 
 
 
+def confusion_matrix(labels, predictions):
+    tf.confusion_matrix(labels, predictions)
 
 
 
@@ -179,9 +197,9 @@ def evaluate_orig():
     saver = tf.train.Saver(variables_to_restore)
 
     # Build the summary operation based on the TF collection of Summaries.
-    summary_op = tf.merge_all_summaries()
+    summary_op = tf.summary.merge_all()
 
-    summary_writer = tf.train.SummaryWriter(FLAGS.eval_dir, g)
+    summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, g)
 
     while True:
       eval_once(saver, summary_writer, top_k_op, summary_op)
@@ -189,8 +207,7 @@ def evaluate_orig():
         break
       time.sleep(FLAGS.eval_interval_secs)
 
-
-def evaluate():
+def evaluate(returnConfusionMatrix=True):
     """Eval CIFAR-10 for a number of steps."""
     with tf.Graph().as_default() as g:
         # Get images and labels for CIFAR-10.
@@ -202,6 +219,8 @@ def evaluate():
         # inference model.
         print("calling inference")
         logits = qpNet.inference_switch(images, FLAGS.network_architecture)
+        predictions = tf.argmax(logits, 1)
+        gen_confusionMatrix = tf.confusion_matrix(labels, predictions, num_classes=qpNet_input.NUM_CLASSES)
     
         # Calculate predictions.
         print("calculating predictions")
@@ -217,16 +236,21 @@ def evaluate():
         
         # Build the summary operation based on the TF collection of Summaries.
         print("Building a summary")
-        summary_op = tf.merge_all_summaries()
+        summary_op = tf.summary.merge_all()
                                                           
         print("And a summary writer")
-        summary_writer = tf.train.SummaryWriter(FLAGS.eval_dir, g)
+        summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, g)
                                                           
         while True:
             print("Calling eval_once")
-            precision = eval_once(saver, summary_writer, top_k_op, summary_op)
+            precision, confusionMatrix = eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix)
+            #precision = eval_once(saver, summary_writer, top_k_op, summary_op)
             if FLAGS.run_once:
-                return precision
+                if returnConfusionMatrix:
+                    return precision, confusionMatrix
+                    #return precision
+                else:
+                    return precision
                 break
             time.sleep(FLAGS.eval_interval_secs)
 

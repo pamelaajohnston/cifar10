@@ -87,8 +87,8 @@ def tower_loss(scope):
     loss_name = re.sub('%s_[0-9]*/' % qpNet.TOWER_NAME, '', l.op.name)
     # Name each loss as '(raw)' and name the moving average version of the loss
     # as the original loss name.
-    tf.scalar_summary(loss_name +' (raw)', l)
-    tf.scalar_summary(loss_name, loss_averages.average(l))
+    tf.summary.scalar(loss_name +' (raw)', l)
+    tf.summary.scalar(loss_name, loss_averages.average(l))
 
   with tf.control_dependencies([loss_averages_op]):
     total_loss = tf.identity(total_loss)
@@ -121,7 +121,7 @@ def average_gradients(tower_grads):
       grads.append(expanded_g)
 
     # Average over the 'tower' dimension.
-    grad = tf.concat(0, grads)
+    grad = tf.concat(grads, 0)
     grad = tf.reduce_mean(grad, 0)
 
     # Keep in mind that the Variables are redundant because they are shared
@@ -159,44 +159,45 @@ def train():
 
     # Calculate the gradients for each model tower.
     tower_grads = []
-    for i in xrange(FLAGS.num_gpus):
-      with tf.device('/gpu:%d' % i):
-        with tf.name_scope('%s_%d' % (qpNet.TOWER_NAME, i)) as scope:
-          # Calculate the loss for one tower of the model. This function
-          # constructs the entire model but shares the variables across
-          # all towers.
-          loss = tower_loss(scope)
+    with tf.variable_scope(tf.get_variable_scope()):
+        for i in xrange(FLAGS.num_gpus):
+          with tf.device('/gpu:%d' % i):
+            with tf.name_scope('%s_%d' % (qpNet.TOWER_NAME, i)) as scope:
+              # Calculate the loss for one tower of the model. This function
+              # constructs the entire model but shares the variables across
+              # all towers.
+              loss = tower_loss(scope)
 
-          # Reuse variables for the next tower.
-          tf.get_variable_scope().reuse_variables()
+              # Reuse variables for the next tower.
+              tf.get_variable_scope().reuse_variables()
 
-          # Retain the summaries from the final tower.
-          summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope)
+              # Retain the summaries from the final tower.
+              summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope)
 
-          # Calculate the gradients for the batch of data on this model tower.
-          grads = opt.compute_gradients(loss)
+              # Calculate the gradients for the batch of data on this model tower.
+              grads = opt.compute_gradients(loss)
 
-          # Keep track of the gradients across all towers.
-          tower_grads.append(grads)
+              # Keep track of the gradients across all towers.
+              tower_grads.append(grads)
 
     # We must calculate the mean of each gradient. Note that this is the
     # synchronization point across all towers.
     grads = average_gradients(tower_grads)
 
     # Add a summary to track the learning rate.
-    summaries.append(tf.scalar_summary('learning_rate', lr))
+    summaries.append(tf.summary.scalar('learning_rate', lr))
 
     # Add histograms for gradients.
     for grad, var in grads:
       if grad is not None:
-        summaries.append(tf.histogram_summary(var.op.name + '/gradients', grad))
+        summaries.append(tf.summary.histogram(var.op.name + '/gradients', grad))
 
     # Apply the gradients to adjust the shared variables.
     apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
 
     # Add histograms for trainable variables.
     for var in tf.trainable_variables():
-      summaries.append(tf.histogram_summary(var.op.name, var))
+      summaries.append(tf.summary.histogram(var.op.name, var))
 
     # Track the moving averages of all trainable variables.
     variable_averages = tf.train.ExponentialMovingAverage(qpNet.MOVING_AVERAGE_DECAY, global_step)
@@ -205,19 +206,21 @@ def train():
     # Group all updates to into a single train op.
     train_op = tf.group(apply_gradient_op, variables_averages_op)
 
-    # Create a saver.
+    # Create a saver (which is deprecated in version 1.4)
     saver = tf.train.Saver(tf.all_variables())
+    #saver = tf.train.Saver(tf.global_variable())
 
     # Build the summary operation from the last tower summaries.
-    summary_op = tf.merge_summary(summaries)
+    summary_op = tf.summary.merge(summaries)
 
-    # Build an initialization operation to run below.
-    init = tf.initialize_all_variables()
+    # Build an initialization operation to run below (deprecated and replaced by tf.global_variables_initializer())
+    #init = tf.initialize_all_variables()
+    init = tf.global_variables_initializer()
 
     # Start running operations on the Graph. allow_soft_placement must be set to
     # True to build towers on GPU, as some of the ops do not have GPU
     # implementations.
-    
+
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5)
     #sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
 
@@ -230,7 +233,8 @@ def train():
     # Start the queue runners.
     tf.train.start_queue_runners(sess=sess)
 
-    summary_writer = tf.train.SummaryWriter(FLAGS.train_dir, sess.graph)
+    summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
+
 
     for step in xrange(FLAGS.max_steps):
       start_time = time.time()
@@ -294,7 +298,7 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     log.write("Here are the results for network architecture {}\n".format(FLAGS.network_architecture))
 
     quants = xrange(0, 50, 7)
-    quants = xrange(0, 7)
+    quants = xrange(0, 8)
 
     myDatadirs = []
     for quant in quants:
@@ -327,10 +331,20 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     train()
 
     for idx, datadir in enumerate(myDatadirs):
-        precision = qpNet_eval.evaluate()
+        precision, cm = qpNet_eval.evaluate()
         print("Evaluating {} on {}-trained network): {}".format(datadir, FLAGS.single_dir, precision))
         log.write("Evaluating {} on {}-trained network: {}\n".format(datadir, FLAGS.single_dir, precision))
+        print("The confusion matrix (yay!): \n {}".format(cm))
+        #log.write("The confusion matrix (yay!): \n {}".format(cm))
+        if idx == 0:
+            confusionMatrix = cm
+        else:
+            confusionMatrix = confusionMatrix + cm
         log.flush()
+        if idx > 0:
+            break
+    print("The overall confusion matrix is: \n {}".format(confusionMatrix))
+    log.write("The overall confusion matrix is: \n {}".format(confusionMatrix))
 
 def main(argv=None):
     main_justTheOne(argv)

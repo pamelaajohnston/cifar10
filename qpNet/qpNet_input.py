@@ -136,7 +136,7 @@ def _generate_image_and_label_batch(image, label, min_queue_examples, batch_size
         capacity=min_queue_examples + 3 * batch_size)
 
   # Display the training images in the visualizer.
-  tf.image_summary('images', images)
+  tf.summary.image('images', images)
 
   return images, tf.reshape(label_batch, [batch_size])
 
@@ -154,7 +154,7 @@ def distorted_inputs(data_dir, batch_size, distort=False):
   """
   # for CIFAR-10
   print("From within distorted_inputs, data_dir = {}here".format(data_dir))
-  filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 7)]
+  filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)]
 
   print("And the expected filenames are {}".format(filenames))
 
@@ -190,7 +190,7 @@ def distorted_inputs(data_dir, batch_size, distort=False):
     distorted_image = tf.image.resize_image_with_crop_or_pad(reshaped_image, width, height)
 
   # Subtract off the mean and divide by the variance of the pixels.
-  float_image = tf.image.per_image_whitening(distorted_image)
+  float_image = tf.image.per_image_standardization(distorted_image)
 
   # Ensure that the random shuffling has good mixing properties.
   min_fraction_of_examples_in_queue = 0.4
@@ -217,13 +217,13 @@ def inputs(eval_data, data_dir, batch_size):
     labels: Labels. 1D tensor of [batch_size] size.
   """
   if not eval_data:
-    filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 7)]
+    filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)]
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
   else:
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
     #quantRange = [0, 7, 14, 21, 28, 35, 42, 49]
     quantRange = xrange(0, 50, 7)
-    quantRange = xrange(0, 7)
+    quantRange = xrange(0, 8)
     filenames = [os.path.join(data_dir, 'patches_test_%d.bin' % i) for i in quantRange]
 
   for f in filenames:
@@ -245,7 +245,7 @@ def inputs(eval_data, data_dir, batch_size):
   resized_image = tf.image.resize_image_with_crop_or_pad(reshaped_image, width, height)
 
   # Subtract off the mean and divide by the variance of the pixels.
-  float_image = tf.image.per_image_whitening(resized_image)
+  float_image = tf.image.per_image_standardization(resized_image)
 
   # Ensure that the random shuffling has good mixing properties.
   min_fraction_of_examples_in_queue = 0.4
