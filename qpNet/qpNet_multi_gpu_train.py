@@ -306,7 +306,8 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     for quant in quants:
         name = "_{}".format(quant)
         myDatadirs.append(name)
-    myDatadirs = [_all]
+    print("The data dirs: {}".format(myDatadirs))
+    myDatadirs = ['_all',]
 
     logfile = os.path.join(FLAGS.mylog_dir, "log.txt")
     log = open(logfile, 'w')
