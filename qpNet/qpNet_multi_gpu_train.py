@@ -26,6 +26,7 @@ from __future__ import division
 from __future__ import print_function
 
 from datetime import datetime
+from datetime import timedelta
 import os.path
 import re
 import time
@@ -36,6 +37,8 @@ import tensorflow as tf
 import qpNet
 import qpNet_eval
 import sys
+#import datetime
+
 #import image2vid
 
 FLAGS = tf.app.flags.FLAGS
@@ -297,7 +300,8 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     myDatadirs = [FLAGS.single_dir,]
     logfile = os.path.join(FLAGS.mylog_dir, "log_results.txt")
     log = open(logfile, 'w')
-    log.write("Here are the results for network architecture {}\n".format(FLAGS.network_architecture))
+
+
 
     quants = xrange(0, 50, 7)
     quants = xrange(0, 8)
@@ -311,7 +315,8 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
 
     logfile = os.path.join(FLAGS.mylog_dir, "log.txt")
     log = open(logfile, 'w')
-    log.write("Here are the results \n")
+    log.write("Here are the results for network architecture {}\n".format(FLAGS.network_architecture))
+
 
     print("For testing: These are my datadirs: {}".format(myDatadirs))
 
@@ -332,7 +337,16 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     print("Eval dir: {}".format(FLAGS.eval_dir))
     print("Network Architecture: {}".format(FLAGS.network_architecture))
 
+    start = datetime.now()
+    log.write("Training started at: {} \n".format(start.strftime("%Y-%m-%d %H:%M")))
+
     train()
+
+    end = datetime.now()
+    log.write("Training ended at: {} \n".format(end.strftime("%Y-%m-%d %H:%M")))
+    difference = end - start
+    human_diff = divmod(difference.total_seconds(), 60)
+    log.write("Training time: {} minutes {} seconds \n".format(human_diff[0], human_diff[1]))
 
     for idx, datadir in enumerate(myDatadirs):
         precision, cm = qpNet_eval.evaluate()
