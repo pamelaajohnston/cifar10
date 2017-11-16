@@ -348,6 +348,7 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     human_diff = divmod(difference.total_seconds(), 60)
     log.write("Training time: {} minutes {} seconds \n".format(human_diff[0], human_diff[1]))
 
+
     for idx, datadir in enumerate(myDatadirs):
         precision, cm = qpNet_eval.evaluate()
         print("Evaluating {} on {}-trained network): {}".format(datadir, FLAGS.single_dir, precision))
