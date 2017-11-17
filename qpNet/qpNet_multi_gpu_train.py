@@ -265,26 +265,27 @@ def train():
         checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)
 
-#      # evaluate on the test data periodically
-#      if step % 10 == 0:
-#        print("Evaluation time......!")
-#        images_test, labels_test = cifar10.inputs(eval_data=True)
-#        logits_test = cifar10.inference_switch(images_test, FLAGS.network_architecture)
-#        top_k_op = tf.nn.in_top_k(logits_test, labels_test, 1)
-#        num_iter = int(FLAGS.num_examples / FLAGS.batch_size)
-#        print("Number of iterations = {}".format(num_iter))
-#        true_count = 0  # Counts the number of correct predictions.
-#        total_sample_count = num_iter * FLAGS.batch_size
-#        print("total_sample_count = {}".format(total_sample_count))
-#        step = 0
-#        while step < num_iter:
-#            print("Step is {}".format(step))
-#            predictions = sess.run([top_k_op])
-#            true_count += np.sum(predictions)
-#            step += 1
-#        # Compute precision @ 1.
-#        precision = true_count / total_sample_count
-#        print('%s: precision @ 1 = %.5f' % (datetime.now(), precision))
+      # evaluate on the test data periodically
+      #if step % 10 == 0:
+      #  print("Evaluation time......!")
+      #  with tf.variable_scope(tf.get_variable_scope(), reuse=True):
+      #      images_test, labels_test = qpNet.inputs(eval_data=True)
+      #      logits_test = qpNet.inference_switch(images_test, FLAGS.network_architecture)
+      #      top_k_op = tf.nn.in_top_k(logits_test, labels_test, 1)
+      #      num_iter = int(FLAGS.num_examples / FLAGS.batch_size)
+      #      print("Number of iterations = {}".format(num_iter))
+      #      true_count = 0  # Counts the number of correct predictions.
+      #      total_sample_count = num_iter * FLAGS.batch_size
+      #      print("total_sample_count = {}".format(total_sample_count))
+      #      step = 0
+      #      while step < num_iter:
+      #          print("Step is {}".format(step))
+      #          predictions = sess.run([top_k_op])
+      #          true_count += np.sum(predictions)
+      #          step += 1
+      #      # Compute precision @ 1.
+      #      precision = true_count / total_sample_count
+      #      print('%s: precision @ 1 = %.5f' % (datetime.now(), precision))
 
 def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     FLAGS.run_once = True
