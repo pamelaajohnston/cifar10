@@ -225,6 +225,8 @@ def inputs(eval_data, data_dir, batch_size):
     quantRange = xrange(0, 50, 7)
     quantRange = xrange(0, 8)
     filenames = [os.path.join(data_dir, 'patches_test_%d.bin' % i) for i in quantRange]
+    print("Inputting test data which is {}".format(filenames))
+
 
   for f in filenames:
     if not tf.gfile.Exists(f):

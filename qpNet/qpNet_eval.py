@@ -134,14 +134,17 @@ def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
             total_sample_count = num_iter * FLAGS.batch_size
             step = 0
             while step < num_iter and not coord.should_stop():
-                predictions = sess.run([top_k_op])
-                batchConfusionMatrix = sess.run([gen_confusionMatrix])
+                predictions, batchConfusionMatrix = sess.run([top_k_op, gen_confusionMatrix])
+                batchConfusionMatrix = np.asarray(batchConfusionMatrix)
+                batchConfusionMatrix = batchConfusionMatrix.reshape((qpNet_input.NUM_CLASSES, qpNet_input.NUM_CLASSES))
                 if step == 0:
                     #confusionMatrix = np.asarray(tf.unstack(batchConfusionMatrix))
                     confusionMatrix = batchConfusionMatrix
                 else:
-                    #print("Adding the confusion matrix to the existing one...")
                     confusionMatrix = np.add(confusionMatrix, batchConfusionMatrix)
+                #numRight = np.sum(predictions)
+                #print("test step {} of {} ".format(step, num_iter))
+                #print("We got {} correct".format(numRight))
                 #print("Here's the batchCM:\n {}".format(batchConfusionMatrix))
                 #print("Here's the cm:\n {}".format(confusionMatrix))
                 true_count += np.sum(predictions)
@@ -149,6 +152,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
 
             # Compute precision @ 1.
             precision = true_count / total_sample_count
+            print('For calculating precision: {} correct out of {} samples'.format(true_count, total_sample_count))
             print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
             #print("Unstacking the confusion matrix")
             #cm = tf.unstack(confusionMatrix)
@@ -169,12 +173,6 @@ def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
 
 def confusion_matrix(labels, predictions):
     tf.confusion_matrix(labels, predictions)
-
-
-
-
-
-
 
 
 def evaluate_orig():
@@ -211,8 +209,9 @@ def evaluate(returnConfusionMatrix=True):
     """Eval CIFAR-10 for a number of steps."""
     with tf.Graph().as_default() as g:
         # Get images and labels for CIFAR-10.
-        print("getting input data")
+        print("getting input data {}".format(FLAGS.eval_data))
         eval_data = FLAGS.eval_data == 'test'
+        eval_data = True
         images, labels = qpNet.inputs(eval_data=eval_data)
     
         # Build a Graph that computes the logits predictions from the
@@ -229,9 +228,7 @@ def evaluate(returnConfusionMatrix=True):
         # Restore the moving average version of the learned variables for eval.
         print("restore moving average version of learned variables")
         variable_averages = tf.train.ExponentialMovingAverage(qpNet.MOVING_AVERAGE_DECAY)
-        print("restore moving average version of learned variables 2")
         variables_to_restore = variable_averages.variables_to_restore()
-        print("restore moving average version of learned variables 3")
         saver = tf.train.Saver(variables_to_restore)
         
         # Build the summary operation based on the TF collection of Summaries.

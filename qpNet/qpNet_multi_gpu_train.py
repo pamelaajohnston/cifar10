@@ -211,8 +211,8 @@ def train():
     train_op = tf.group(apply_gradient_op, variables_averages_op)
 
     # Create a saver (which is deprecated in version 1.4)
-    saver = tf.train.Saver(tf.all_variables())
-    #saver = tf.train.Saver(tf.global_variable())
+    #saver = tf.train.Saver(tf.all_variables())
+    saver = tf.train.Saver(tf.global_variables())
 
     # Build the summary operation from the last tower summaries.
     summary_op = tf.summary.merge(summaries)
@@ -361,6 +361,17 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
             confusionMatrix = confusionMatrix + cm
         log.flush()
     print("The overall confusion matrix is: \n {}".format(confusionMatrix))
+    # confusion matrix totals:
+    labelTots = np.sum(confusionMatrix, axis=1)
+    print("Label totals: {} ".format(labelTots))
+    predTots = np.sum(confusionMatrix, axis=0)
+    print("prediction totals: {} ".format(predTots))
+    totalCorrects = np.sum(confusionMatrix.diagonal())
+    totalTests = np.sum(confusionMatrix)
+    prec = totalCorrects/totalTests
+    print("Diagonal is {}. Precision is : {} out of {} = {}".format(confusionMatrix.diagonal(), totalCorrects, totalTests, prec))
+
+
     log.write("The overall confusion matrix is: \n {}".format(confusionMatrix))
     log.flush()
 
