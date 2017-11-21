@@ -355,7 +355,8 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     log.write("Training ended at: {} \n".format(end.strftime("%Y-%m-%d %H:%M")))
     difference = end - start
     human_diff = divmod(difference.total_seconds(), 60)
-    log.write("Training time: {} minutes {} seconds \n".format(human_diff[0], human_diff[1]))
+    perStep = difference.total_seconds() / FLAGS.max_steps
+    log.write("Training time: {} minutes {} seconds; which is {} seconds per step\n".format(human_diff[0], human_diff[1], perStep))
 
 
     for idx, datadir in enumerate(myDatadirs):

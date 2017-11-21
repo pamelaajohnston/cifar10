@@ -244,6 +244,7 @@ def evaluate(returnConfusionMatrix=True):
 
         logfile = os.path.join(FLAGS.mylog_dir_eval, "log_evals.txt")
         log = open(logfile, 'w')
+        start = datetime.now()
 
         while True:
             #print("Calling eval_once")
@@ -259,10 +260,13 @@ def evaluate(returnConfusionMatrix=True):
             time.sleep(FLAGS.eval_interval_secs)
             print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
             print('{}: confusionMatrix: \n {}'.format(datetime.now(), confusionMatrix))
-            log.write("*******************************************************")
-            log.write('%s: precision @ 1 = %.5f' % (datetime.now(), precision))
-            log.write('{}: confusionMatrix: \n {}'.format(datetime.now(), confusionMatrix))
-            log.write("*******************************************************")
+            rightNow = datetime.now()
+            difference = rightNow - start
+            log.write("*******************************************************\n")
+            log.write("time: {} seconds \n".format(difference.total_seconds()))
+            log.write('precision @ 1 = %.5f \n' % (precision))
+            log.write('confusionMatrix: \n {} \n'.format(confusionMatrix))
+            log.write("******************************************************* \n")
             log.flush()
 
 
