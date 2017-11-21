@@ -25,6 +25,8 @@ import time
 import numpy as np
 import tensorflow as tf
 
+import os
+
 import qpNet
 import qpNet_input
 #import liftedTFfunctions
@@ -38,6 +40,8 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 60, """How often to run the ev
 tf.app.flags.DEFINE_integer('num_examples', 7920, """Number of examples to run.""")
 tf.app.flags.DEFINE_boolean('run_once', False, """Whether to run eval only once.""")
 tf.app.flags.DEFINE_integer('network_architecture', 1, """The number of the network architecture to use (inference function) """)
+tf.app.flags.DEFINE_string('mylog_dir_eval', '/Users/pam/Documents/temp/',  """Directory where to write my logs """)
+
 
 
 def eval_once_orig(saver, summary_writer, top_k_op, summary_op):
@@ -237,7 +241,10 @@ def evaluate(returnConfusionMatrix=True):
                                                           
         #print("And a summary writer")
         summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, g)
-                                                          
+
+        logfile = os.path.join(FLAGS.mylog_dir_eval, "log_evals.txt")
+        log = open(logfile, 'w')
+
         while True:
             #print("Calling eval_once")
             precision, confusionMatrix = eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix)
@@ -252,6 +259,11 @@ def evaluate(returnConfusionMatrix=True):
             time.sleep(FLAGS.eval_interval_secs)
             print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
             print('{}: confusionMatrix: \n {}'.format(datetime.now(), confusionMatrix))
+            log.write("*******************************************************")
+            log.write('%s: precision @ 1 = %.5f' % (datetime.now(), precision))
+            log.write('{}: confusionMatrix: \n {}'.format(datetime.now(), confusionMatrix))
+            log.write("*******************************************************")
+            log.flush()
 
 
 def main(argv=None):  # pylint: disable=unused-argument

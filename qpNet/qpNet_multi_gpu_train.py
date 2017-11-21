@@ -307,8 +307,8 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     #myDatadirs = image2vid.generateDatasets('', src_dir, FLAGS.data_dir, '', x264, '', saveFrames, quants)
     #datasetNames = ["yuv", "y_quv", "y_squv", "interlaced"]
     myDatadirs = [FLAGS.single_dir,]
-    logfile = os.path.join(FLAGS.mylog_dir, "log_results.txt")
-    log = open(logfile, 'w')
+    #logfile = os.path.join(FLAGS.mylog_dir, "log_results.txt")
+    #log = open(logfile, 'w')
 
 
 
@@ -322,9 +322,9 @@ def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     print("The data dirs: {}".format(myDatadirs))
     myDatadirs = ['_all',]
 
-    logfile = os.path.join(FLAGS.mylog_dir, "log.txt")
+    logfile = os.path.join(FLAGS.mylog_dir, "log_results.txt")
     log = open(logfile, 'w')
-    log.write("Here are the results for network architecture {}\n".format(FLAGS.network_architecture))
+    log.write("***********Here are the results for network architecture {}***********\n".format(FLAGS.network_architecture))
 
 
     print("For testing: These are my datadirs: {}".format(myDatadirs))
