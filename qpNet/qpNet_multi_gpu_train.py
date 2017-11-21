@@ -53,6 +53,26 @@ tf.app.flags.DEFINE_string('mylog_dir', '/Users/pam/Documents/temp/',  """Direct
 
 tf.app.flags.DEFINE_string('single_dir', '_yuv', """For defining the single directory """)
 
+def one_eval(scope):
+    images_test, labels_test = qpNet.inputs(eval_data=True)
+    logits_test = qpNet.inference_switch(images_test, FLAGS.network_architecture)
+    top_k_op = tf.nn.in_top_k(logits_test, labels_test, 1)
+    num_iter = int(FLAGS.num_examples / FLAGS.batch_size)
+    print("Number of iterations = {}".format(num_iter))
+    true_count = 0  # Counts the number of correct predictions.
+    total_sample_count = num_iter * FLAGS.batch_size
+    print("total_sample_count = {}".format(total_sample_count))
+    step = 0
+    while step < num_iter:
+        print("Step is {}".format(step))
+        predictions = sess.run([top_k_op])
+        true_count += np.sum(predictions)
+        step += 1
+    # Compute precision @ 1.
+    precision = true_count / total_sample_count
+    print('%s: precision @ 1 = %.5f' % (datetime.now(), precision))
+    return precision
+
 
 def tower_loss(scope):
   """Calculate the total loss on a single tower running the model.
@@ -172,8 +192,11 @@ def train():
               # all towers.
               loss = tower_loss(scope)
 
+
               # Reuse variables for the next tower.
               tf.get_variable_scope().reuse_variables()
+
+              #evilevals = one_eval(scope)
 
               # Retain the summaries from the final tower.
               summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope)
@@ -268,24 +291,9 @@ def train():
       # evaluate on the test data periodically
       #if step % 10 == 0:
       #  print("Evaluation time......!")
-      #  with tf.variable_scope(tf.get_variable_scope(), reuse=True):
-      #      images_test, labels_test = qpNet.inputs(eval_data=True)
-      #      logits_test = qpNet.inference_switch(images_test, FLAGS.network_architecture)
-      #      top_k_op = tf.nn.in_top_k(logits_test, labels_test, 1)
-      #      num_iter = int(FLAGS.num_examples / FLAGS.batch_size)
-      #      print("Number of iterations = {}".format(num_iter))
-      #      true_count = 0  # Counts the number of correct predictions.
-      #      total_sample_count = num_iter * FLAGS.batch_size
-      #      print("total_sample_count = {}".format(total_sample_count))
-      #      step = 0
-      #      while step < num_iter:
-      #          print("Step is {}".format(step))
-      #          predictions = sess.run([top_k_op])
-      #          true_count += np.sum(predictions)
-      #          step += 1
-      #      # Compute precision @ 1.
-      #      precision = true_count / total_sample_count
-      #      print('%s: precision @ 1 = %.5f' % (datetime.now(), precision))
+      #  precision = sess.run(evilevals)
+      #  print('%s: precision @ 1 = %.5f' % (datetime.now(), precision))
+
 
 def main_justTheOne(argv=None):  # pylint: disable=unused-argument
     FLAGS.run_once = True

@@ -120,7 +120,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
             global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
         else:
             print('No checkpoint file found {} and {}'.format(FLAGS.checkpoint_dir, ckpt))
-            return
+            return 0, None
 
         # Start the queue runners.
         coord = tf.train.Coordinator()
@@ -152,8 +152,8 @@ def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
 
             # Compute precision @ 1.
             precision = true_count / total_sample_count
-            print('For calculating precision: {} correct out of {} samples'.format(true_count, total_sample_count))
-            print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
+            #print('For calculating precision: {} correct out of {} samples'.format(true_count, total_sample_count))
+            #print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
             #print("Unstacking the confusion matrix")
             #cm = tf.unstack(confusionMatrix)
 
@@ -209,37 +209,37 @@ def evaluate(returnConfusionMatrix=True):
     """Eval CIFAR-10 for a number of steps."""
     with tf.Graph().as_default() as g:
         # Get images and labels for CIFAR-10.
-        print("getting input data {}".format(FLAGS.eval_data))
+        #print("getting input data {}".format(FLAGS.eval_data))
         eval_data = FLAGS.eval_data == 'test'
         eval_data = True
         images, labels = qpNet.inputs(eval_data=eval_data)
     
         # Build a Graph that computes the logits predictions from the
         # inference model.
-        print("calling inference")
+        #print("calling inference")
         logits = qpNet.inference_switch(images, FLAGS.network_architecture)
         predictions = tf.argmax(logits, 1)
         gen_confusionMatrix = tf.confusion_matrix(labels, predictions, num_classes=qpNet_input.NUM_CLASSES)
     
         # Calculate predictions.
-        print("calculating predictions")
+        #print("calculating predictions")
         top_k_op = tf.nn.in_top_k(logits, labels, 1)
     
         # Restore the moving average version of the learned variables for eval.
-        print("restore moving average version of learned variables")
+        #print("restore moving average version of learned variables")
         variable_averages = tf.train.ExponentialMovingAverage(qpNet.MOVING_AVERAGE_DECAY)
         variables_to_restore = variable_averages.variables_to_restore()
         saver = tf.train.Saver(variables_to_restore)
         
         # Build the summary operation based on the TF collection of Summaries.
-        print("Building a summary")
+        #print("Building a summary")
         summary_op = tf.summary.merge_all()
                                                           
-        print("And a summary writer")
+        #print("And a summary writer")
         summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, g)
                                                           
         while True:
-            print("Calling eval_once")
+            #print("Calling eval_once")
             precision, confusionMatrix = eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix)
             #precision = eval_once(saver, summary_writer, top_k_op, summary_op)
             if FLAGS.run_once:
@@ -250,6 +250,8 @@ def evaluate(returnConfusionMatrix=True):
                     return precision
                 break
             time.sleep(FLAGS.eval_interval_secs)
+            print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
+            print('{}: confusionMatrix: \n {}'.format(datetime.now(), confusionMatrix))
 
 
 def main(argv=None):  # pylint: disable=unused-argument
