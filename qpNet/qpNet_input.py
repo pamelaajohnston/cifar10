@@ -31,9 +31,11 @@ INPUT_IMAGE_HEIGHT = 80
 # Number of classes
 NUM_CLASSES = 8
 # This is the number of training examples in the dataset - one epoch runs over all the examples
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 79920
+#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 79920 # This was only the CIF images, 18 sequences, 3 for test
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 146592
 # This is the number of test examples in the dataset - one epoch runs over all the examples
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 7920
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 7920  # This was only the CIF images, 18 sequences, 3 for test
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 8400
 
 
 def read_dataset(filename_queue):

@@ -31,9 +31,8 @@ fileSizes = [
 
 quants = [0, 7, 14, 21, 28, 35, 42, 49]
 
-def createFileList(myDir):
+def createFileList(myDir, takeAll = False):
     fileList = []
-    takeAll = False
     index = 0
     # First, create a list of the files to encode, along with dimensions
     for (dirName, subdirList, filenames) in os.walk(myDir):
@@ -281,5 +280,34 @@ def main(argv=None):
     patchesBinFileName = "patches"
     patchArray = extractPatches(fileList, patchesBinFileName)
 
+def main_2(argv=None):
+    print("Butcher the test files (in a slightly different way")
+    startHere = '/Volumes/LaCie/data/yuv_quant_noDeblock_test'
+
+    fileList = createFileList(startHere, takeAll=True)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches_test"
+    patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 80, patchStride = 48, frameSampleStep = 30, numChannels=3)
+
+    print("Butcher the train files")
+    startHere = '/Volumes/LaCie/data/yuv_quant_noDeblock_train'
+
+    fileList = createFileList(startHere, takeAll=True)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches"
+    patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 80, patchStride = 80, frameSampleStep = 40, numChannels=3)
+
 if __name__ == "__main__":
-    main()
+    main_2()

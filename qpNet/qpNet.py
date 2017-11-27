@@ -1976,12 +1976,8 @@ def inference_19(images):
   Returns:
     Logits.
   """
-  # We instantiate all variables using tf.get_variable() instead of
-  # tf.Variable() in order to share variables across multiple GPU training runs.
-  # If we only ran this model on a single GPU, we could simplify this function
-  # by replacing all instances of tf.get_variable() with tf.Variable().
-  #
-  # PAJ: This is the original from the CIFAR-10 tutorial. Expect 84% accuracy after 30k steps on CIFAR-10
+
+  # PAJ: Inspired by A DEEP NEURAL NETWORK FOR IMAGE QUALITY ASSESSMENT (ok, it's nearly the same network).
 
   # conv1
   with tf.variable_scope('conv1') as scope:
@@ -2128,20 +2124,20 @@ def inference_19(images):
     _activation_summary(local11)
 
   # local12
-  with tf.variable_scope('local12') as scope:
-    weights = _variable_with_weight_decay('weights', shape=[512, 192],
-                                          stddev=0.04, wd=0.004)
-    biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
-    local12 = tf.nn.relu(tf.matmul(local11, weights) + biases, name=scope.name)
-    _activation_summary(local12)
+  #with tf.variable_scope('local12') as scope:
+  #  weights = _variable_with_weight_decay('weights', shape=[512, 192],
+  #                                        stddev=0.04, wd=0.004)
+  #  biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
+  #  local12 = tf.nn.relu(tf.matmul(local11, weights) + biases, name=scope.name)
+  #  _activation_summary(local12)
 
   # softmax, i.e. softmax(WX + b)
   with tf.variable_scope('softmax_linear') as scope:
-    weights = _variable_with_weight_decay('weights', [192, NUM_CLASSES],
-                                          stddev=1/192.0, wd=0.0)
+    weights = _variable_with_weight_decay('weights', [512, NUM_CLASSES],
+                                          stddev=1/512.0, wd=0.0)
     biases = _variable_on_cpu('biases', [NUM_CLASSES],
                               tf.constant_initializer(0.0))
-    softmax_linear = tf.add(tf.matmul(local12, weights), biases, name=scope.name)
+    softmax_linear = tf.add(tf.matmul(local11, weights), biases, name=scope.name)
     _activation_summary(softmax_linear)
 
   return softmax_linear
