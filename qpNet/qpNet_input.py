@@ -156,7 +156,8 @@ def distorted_inputs(data_dir, batch_size, distort=False):
   """
   # for CIFAR-10
   print("From within distorted_inputs, data_dir = {}here".format(data_dir))
-  filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)]
+  #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)]
+  filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 16)]
 
   print("And the expected filenames are {}".format(filenames))
 
@@ -219,7 +220,8 @@ def inputs(eval_data, data_dir, batch_size):
     labels: Labels. 1D tensor of [batch_size] size.
   """
   if not eval_data:
-    filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)]
+    #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)]
+    filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 16)]
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
   else:
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
