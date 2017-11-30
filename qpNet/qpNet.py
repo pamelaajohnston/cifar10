@@ -260,7 +260,7 @@ def inference_switch(images, type=1):
     if FLAGS.binarise_label >= 0:
         NUM_CLASSES = 2
         qpNet_input.NUM_CLASSES = 2
-    print("There are {} classes".format(NUM_CLASSES))
+    #print("There are {} classes".format(NUM_CLASSES))
 
     if type == 1:
         return inference(images)

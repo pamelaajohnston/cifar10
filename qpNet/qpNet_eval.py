@@ -37,7 +37,7 @@ tf.app.flags.DEFINE_string('eval_dir', 'eval', """Directory where to write event
 tf.app.flags.DEFINE_string('eval_data', 'test', """Either 'test' or 'train_eval'.""")
 tf.app.flags.DEFINE_string('checkpoint_dir', 'train', """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60, """How often to run the eval.""")
-tf.app.flags.DEFINE_integer('num_examples', 7920, """Number of examples to run.""")
+tf.app.flags.DEFINE_integer('num_examples', 8400, """Number of examples to run.""")
 tf.app.flags.DEFINE_boolean('run_once', False, """Whether to run eval only once.""")
 tf.app.flags.DEFINE_integer('network_architecture', 1, """The number of the network architecture to use (inference function) """)
 tf.app.flags.DEFINE_string('mylog_dir_eval', '/Users/pam/Documents/temp/',  """Directory where to write my logs """)
@@ -211,7 +211,7 @@ def evaluate_orig():
 
 def evaluate(returnConfusionMatrix=True):
     num_classes = qpNet_input.NUM_CLASSES
-    if FLAGS.binarise_label:
+    if FLAGS.binarise_label >= 0:
         num_classes = 2
     print("And again {} classes".format(num_classes))
     """Eval CIFAR-10 for a number of steps."""
