@@ -41,6 +41,7 @@ tf.app.flags.DEFINE_integer('batch_size', 128, """Number of images to process in
 tf.app.flags.DEFINE_string('data_dir', 'qpDataset', """Path to the directory.""")
 tf.app.flags.DEFINE_string('batches_dir', ' ', """Path to the secondary data directory.""")
 tf.app.flags.DEFINE_boolean('use_fp16', False, """Train the model using fp16.""")
+tf.app.flags.DEFINE_integer('binarise_label', -1, """Binarise this label""")
 
 #tf.app.flags.DEFINE_string('prelearned_checkpoint', '/Users/pam/Documents/data/CIFAR-10/test3/cifar10_train/train_yuv/model.ckpt-29999', """The same network architecture trained on something else""")
 
@@ -182,6 +183,13 @@ def _variable_with_weight_decay(name, shape, stddev, wd, fresh_init = True, init
         tf.add_to_collection('losses', weight_decay)
     return var
 
+def binariseTheLabels(labels):
+    masky = tf.fill(labels.get_shape(), FLAGS.binarise_label)
+    labels = tf.equal(labels, masky)
+    labels = tf.cast(labels, tf.int32)
+    return labels
+
+
 
 def distorted_inputs():
   """Construct distorted input for training using the Reader ops.
@@ -206,6 +214,11 @@ def distorted_inputs():
   if FLAGS.use_fp16:
     images = tf.cast(images, tf.float16)
     labels = tf.cast(labels, tf.float16)
+
+  # binaries the labels if necessary:
+  if FLAGS.binarise_label >= 0:
+      labels = binariseTheLabels(labels)
+
   return images, labels
 
 
@@ -236,10 +249,19 @@ def inputs(eval_data):
   if FLAGS.use_fp16:
     images = tf.cast(images, tf.float16)
     labels = tf.cast(labels, tf.float16)
+
+  # binaries the labels if necessary:
+  if FLAGS.binarise_label >= 0:
+      labels = binariseTheLabels(labels)
   return images, labels
 
 
 def inference_switch(images, type=1):
+    if FLAGS.binarise_label >= 0:
+        NUM_CLASSES = 2
+        qpNet_input.NUM_CLASSES = 2
+    print("There are {} classes".format(NUM_CLASSES))
+
     if type == 1:
         return inference(images)
     elif type == 2:
@@ -278,6 +300,12 @@ def inference_switch(images, type=1):
         return inference_18(images)
     elif type == 19:
         return inference_19(images)
+    elif type == 20:
+        return inference_10(images, 0.5)
+    elif type == 21:
+        return inference_10(images, 0.8)
+    elif type == 22:
+        return inference_10(images, 0.2)
 
 
 def inference(images):
@@ -1172,7 +1200,7 @@ def inference_9(images):
 
   return softmax_linear
 
-def inference_10(images):
+def inference_10(images, dropOut_prob = 1.0):
   """Build the model.
 
   Args:
@@ -1230,7 +1258,8 @@ def inference_10(images):
     weights = _variable_with_weight_decay('weights', shape=[dim, 384],
                                           stddev=0.04, wd=0.004)
     biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.1))
-    local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
+    relu3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
+    local3 = tf.nn.dropout(relu3, dropOut_prob)
     _activation_summary(local3)
 
   # local4
@@ -1238,7 +1267,8 @@ def inference_10(images):
     weights = _variable_with_weight_decay('weights', shape=[384, 192],
                                           stddev=0.04, wd=0.004)
     biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
-    local4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
+    relu4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
+    local4 = tf.nn.dropout(relu4, dropOut_prob)
     _activation_summary(local4)
 
   # softmax, i.e. softmax(WX + b)

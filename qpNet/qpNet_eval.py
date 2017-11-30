@@ -210,6 +210,10 @@ def evaluate_orig():
       time.sleep(FLAGS.eval_interval_secs)
 
 def evaluate(returnConfusionMatrix=True):
+    num_classes = qpNet_input.NUM_CLASSES
+    if FLAGS.binarise_label:
+        num_classes = 2
+    print("And again {} classes".format(num_classes))
     """Eval CIFAR-10 for a number of steps."""
     with tf.Graph().as_default() as g:
         # Get images and labels for CIFAR-10.
@@ -217,13 +221,15 @@ def evaluate(returnConfusionMatrix=True):
         eval_data = FLAGS.eval_data == 'test'
         eval_data = True
         images, labels = qpNet.inputs(eval_data=eval_data)
-    
+        if FLAGS.binarise_label >= 0:
+          labels = qpNet.binariseTheLabels(labels)
+
         # Build a Graph that computes the logits predictions from the
         # inference model.
         #print("calling inference")
         logits = qpNet.inference_switch(images, FLAGS.network_architecture)
         predictions = tf.argmax(logits, 1)
-        gen_confusionMatrix = tf.confusion_matrix(labels, predictions, num_classes=qpNet_input.NUM_CLASSES)
+        gen_confusionMatrix = tf.confusion_matrix(labels, predictions, num_classes=num_classes)
     
         # Calculate predictions.
         #print("calculating predictions")
