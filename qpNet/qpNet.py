@@ -184,8 +184,18 @@ def _variable_with_weight_decay(name, shape, stddev, wd, fresh_init = True, init
     return var
 
 def binariseTheLabels(labels):
-    masky = tf.fill(labels.get_shape(), FLAGS.binarise_label)
-    labels = tf.equal(labels, masky)
+    if (FLAGS.binarise_label >= 0):
+        masky = tf.fill(labels.get_shape(), FLAGS.binarise_label)
+        labels = tf.equal(labels, masky)
+    elif (FLAGS.binarise_label == -2):
+        # combine labels (0,1), (2,3), (3,4) etc
+        # so label = l/2 rounded down
+        divvy = tf.fill(labels.get_shape(), 2)
+        labels = tf.floordiv(labels, divvy)
+    elif (FLAGS.binarise_label == -3):
+        divvy = tf.fill(labels.get_shape(), 3)
+        labels = tf.floordiv(labels, divvy)
+
     labels = tf.cast(labels, tf.int32)
     return labels
 
@@ -216,8 +226,7 @@ def distorted_inputs():
     labels = tf.cast(labels, tf.float16)
 
   # binaries the labels if necessary:
-  if FLAGS.binarise_label >= 0:
-      labels = binariseTheLabels(labels)
+  labels = binariseTheLabels(labels)
 
   return images, labels
 
@@ -251,8 +260,7 @@ def inputs(eval_data):
     labels = tf.cast(labels, tf.float16)
 
   # binaries the labels if necessary:
-  if FLAGS.binarise_label >= 0:
-      labels = binariseTheLabels(labels)
+  labels = binariseTheLabels(labels)
   return images, labels
 
 
@@ -260,6 +268,14 @@ def inference_switch(images, type=1):
     if FLAGS.binarise_label >= 0:
         NUM_CLASSES = 2
         qpNet_input.NUM_CLASSES = 2
+    elif FLAGS.binarise_label == -2:
+        NUM_CLASSES = 4
+        qpNet_input.NUM_CLASSES = 4
+    elif FLAGS.binarise_label == -3:
+        NUM_CLASSES = 3
+        qpNet_input.NUM_CLASSES = 3
+
+
     #print("There are {} classes".format(NUM_CLASSES))
 
     if type == 1:
