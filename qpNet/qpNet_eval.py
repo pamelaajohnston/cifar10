@@ -225,7 +225,8 @@ def evaluate(returnConfusionMatrix=True):
         eval_data = FLAGS.eval_data == 'test'
         eval_data = True
         images, labels = qpNet.inputs(eval_data=eval_data)
-        labels = qpNet.binariseTheLabels(labels)
+        # They're already binarised you nit!
+        #labels = qpNet.binariseTheLabels(labels)
 
         # Build a Graph that computes the logits predictions from the
         # inference model.

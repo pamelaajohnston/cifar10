@@ -8,6 +8,38 @@ import sys
 import socket
 #import readConfig
 
+def convertTifToYUV(filename):
+    im = Image.open(filename)
+
+    # print("The baseFileName is: {}".format(baseFileName))
+    width, height = im.size
+
+    pixels = list(im.getdata())
+    pixels = np.asarray(pixels, 'u1')
+    pixels = pixels.reshape(height, width, 3)
+    pixels = np.swapaxes(pixels, 2, 1)
+    pixels = np.swapaxes(pixels, 1, 0)
+    pixels = pixels.flatten()
+    yuvpixels = planarRGB_2_planarYUV(pixels, height, width)
+    return width, height, yuvpixels
+
+def convertTifToYUV420(filename):
+    im = Image.open(filename)
+
+    # print("The baseFileName is: {}".format(baseFileName))
+    width, height = im.size
+
+    pixels = list(im.getdata())
+    pixels = np.asarray(pixels, 'u1')
+    pixels = pixels.reshape(height, width, 3)
+    pixels = np.swapaxes(pixels, 2, 1)
+    pixels = np.swapaxes(pixels, 1, 0)
+    pixels = pixels.flatten()
+    yuvpixels = planarRGB_2_planarYUV(pixels, height=height, width=width)
+    yuvpixels420 = YUV444_2_YUV420_alt(yuvpixels, width=width, height=height)
+    return width, height, yuvpixels420
+
+
 def doubleImage(data, width, height):
     doubleW = width * 2
     doubleH = height * 2
@@ -285,6 +317,39 @@ def YUV444_2_YUV420(data, width, height):
     #shape = u.shape
     #print("The new shape of u: "+ str(shape))
     yuv = np.concatenate([y,u,v])
+    return yuv
+
+
+def YUV444_2_YUV420_alt(data, width, height):
+    from scipy import signal
+    # print("YUV444_2_YUV420_alt")
+    pic_planar = np.array(data)
+    picture = pic_planar.reshape(3, height, width)
+    y = picture[0]
+    u = picture[1]
+    v = picture[2]
+
+    # shape = u.shape
+    # print("The old shape of u: "+ str(shape))
+    # print(u)
+
+    kernel = np.array([[1, 1, 0],
+                       [1, 1, 0],
+                       [0, 0, 0]])
+
+    # Perform 2D convolution with input data and kernel
+    u = signal.convolve2d(u, kernel, mode='same') / kernel.sum()
+    u = u[::2, ::2].copy()
+    v = signal.convolve2d(v, kernel, mode='same') / kernel.sum()
+    v = v[::2, ::2].copy()
+
+    y = y.flatten()
+    u = u.flatten()
+    v = v.flatten()
+
+    # shape = u.shape
+    # print("The new shape of u: "+ str(shape))
+    yuv = np.concatenate([y, u, v])
     return yuv
 
 def YUV420_2_YUV444(data, width, height):

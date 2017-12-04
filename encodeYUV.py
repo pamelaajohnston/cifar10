@@ -23,6 +23,8 @@ import matplotlib.pyplot as plt
 
 fileSizes = [
     ['qcif', 176, 144],
+    ['512x384', 512, 384],
+    ['384x512', 384, 512],
     ['cif', 352, 288],
     ['sif', 352, 240],
     ['720p', 1280, 720],
@@ -31,23 +33,27 @@ fileSizes = [
 
 quants = [0, 7, 14, 21, 28, 35, 42, 49]
 
-def createFileList(myDir, takeAll = False):
+def createFileList(myDir, takeAll = False, format='.yuv'):
     fileList = []
     index = 0
     # First, create a list of the files to encode, along with dimensions
     for (dirName, subdirList, filenames) in os.walk(myDir):
         for filename in filenames:
-            if filename.endswith('.yuv'):
+            if filename.endswith(format):
                 if takeAll or '_cif' in filename:
                     fileName = os.path.join(myDir, dirName, filename)
                     baseFileName, ext = os.path.splitext(filename)
-                    #print("The filename is {} baseFileName {}".format(fileName, baseFileName))
+                    print("The filename is {} baseFileName {}".format(fileName, baseFileName))
 
-                    for fileSize in fileSizes:
-                        if fileSize[0] in fileName:
-                            tuple = [fileName, fileSize[1], fileSize[2]]
-                            fileList.append(tuple)
-                            break
+                    if format=='.yuv':
+                        for fileSize in fileSizes:
+                            if fileSize[0] in fileName:
+                                tuple = [fileName, fileSize[1], fileSize[2]]
+                                fileList.append(tuple)
+                                break
+                    elif format=='.tif':
+                        tuple = [fileName, -1, -1]
+                        fileList.append(tuple)
 
     #hacky hack
     #fileList = [['/Volumes/LaCie/data/yuv_quant_noDeblock/quant_0/mobile_cif_q0.yuv', 352, 288],]
@@ -187,6 +193,7 @@ def extractPatches_byQuant(fileList, outFileBaseName, patchDim = 80, patchStride
             allTheData = np.fromfile(f, 'u1')
         print(allTheData.shape)
         numFrames = allTheData.shape[0] / frameSize
+        print("There are {} frames".format(numFrames))
 
         allTheData = allTheData.reshape(numFrames, frameSize)
         frameSample = 0
@@ -309,5 +316,60 @@ def main_2(argv=None):
     patchesBinFileName = "patches"
     patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 80, patchStride = 80, frameSampleStep = 40, numChannels=3)
 
+
+def encodeAWholeFolderOfImagesAsSingleH264Frames(myDir):
+    fileList = createFileList(myDir, takeAll=True, format='.tif')
+
+    quants = [0,7,14,21,28,35,42,49]
+    #quants = [0,49]
+    for quant in quants:
+        # make a directory
+        dirName = "quant_{}".format(quant)
+        dirName = os.path.join(myDir, dirName)
+        if not os.path.exists(dirName):
+            os.makedirs(dirName)
+
+        for entry in fileList:
+            filename = entry[0]
+            baseFileName = os.path.basename(filename)
+            baseFileName, ext = os.path.splitext(baseFileName)
+            baseFileName = "{}/{}".format(dirName, baseFileName)
+
+            width, height, yuvData = functions.convertTifToYUV420(filename)
+            tempYUVFilename = "myyuv.yuv"
+            functions.saveToFile(yuvData, tempYUVFilename)
+            print("width: {} height: {} filename:{}".format(width, height, filename))
+            h264Filename = "{}_s{}x{}_q{}.h264".format(baseFileName, width, height, quant)
+            compYuvFilename = "{}_s{}x{}_q{}.yuv".format(baseFileName, width, height, quant)
+            isize, psize, bsize = functions.compressFile(x264, tempYUVFilename, width, height, quant, h264Filename, compYuvFilename)
+
+
+def encodeAllOfUCID():
+    ucidData = '/Volumes/LaCie/data/UCID/test'
+    encodeAWholeFolderOfImagesAsSingleH264Frames(ucidData)
+    ucidData = '/Volumes/LaCie/data/UCID/validate'
+    encodeAWholeFolderOfImagesAsSingleH264Frames(ucidData)
+    ucidData = '/Volumes/LaCie/data/UCID/train'
+    encodeAWholeFolderOfImagesAsSingleH264Frames(ucidData)
+
+def main_UCID(argv=None):
+    print("Butcher the test files (in a slightly different way")
+    startHere = '/Volumes/LaCie/data/UCID/test'
+
+    fileList = createFileList(startHere, takeAll=True)
+    for file in fileList:
+        print(file)
+
+    patchesBinFileName = "patches_test"
+    patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 80, patchStride = 48, frameSampleStep = 1, numChannels=3)
+
+    print("Butcher the train files")
+    startHere = '/Volumes/LaCie/data/UCID/train'
+    fileList = createFileList(startHere, takeAll=True)
+    patchesBinFileName = "patches"
+    patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 80, patchStride = 80, frameSampleStep = 1, numChannels=3)
+
 if __name__ == "__main__":
-    main_2()
+    #main_2()
+    #encodeAllOfUCID()
+    main_UCID()

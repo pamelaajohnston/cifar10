@@ -184,6 +184,7 @@ def _variable_with_weight_decay(name, shape, stddev, wd, fresh_init = True, init
     return var
 
 def binariseTheLabels(labels):
+    print("All right, binarising")
     if (FLAGS.binarise_label >= 0):
         masky = tf.fill(labels.get_shape(), FLAGS.binarise_label)
         labels = tf.equal(labels, masky)
@@ -226,6 +227,7 @@ def distorted_inputs():
     labels = tf.cast(labels, tf.float16)
 
   # binaries the labels if necessary:
+  print("Binarising here")
   labels = binariseTheLabels(labels)
 
   return images, labels
@@ -260,6 +262,8 @@ def inputs(eval_data):
     labels = tf.cast(labels, tf.float16)
 
   # binaries the labels if necessary:
+  print("Binarising there")
+
   labels = binariseTheLabels(labels)
   return images, labels
 
