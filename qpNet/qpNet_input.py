@@ -32,10 +32,12 @@ INPUT_IMAGE_HEIGHT = 80
 NUM_CLASSES = 8
 # This is the number of training examples in the dataset - one epoch runs over all the examples
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 79920 # This was only the CIF images, 18 sequences, 3 for test
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 146592
+#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 156592 # This was all of the video data as assembled by me
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 131904 # This was UCID-based
 # This is the number of test examples in the dataset - one epoch runs over all the examples
 #NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 7920  # This was only the CIF images, 18 sequences, 3 for test
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 8400
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 8400 # This was all of the video data as assembled by me
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 53480 # This was UCID-based
 
 
 def read_dataset(filename_queue):
@@ -220,8 +222,9 @@ def inputs(eval_data, data_dir, batch_size):
     labels: Labels. 1D tensor of [batch_size] size.
   """
   if not eval_data:
-    #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)]
-    filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 16)]
+    #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)] # original based on CIF vid
+    #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 16)] # based on all video
+    filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 14)] # based on all video
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
   else:
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
