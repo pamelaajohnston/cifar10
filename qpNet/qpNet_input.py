@@ -224,7 +224,7 @@ def inputs(eval_data, data_dir, batch_size):
   if not eval_data:
     #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)] # original based on CIF vid
     #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 16)] # based on all video
-    filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 14)] # based on all video
+    filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 13)] # based on all video
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
   else:
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
