@@ -41,7 +41,7 @@ tf.app.flags.DEFINE_integer('batch_size', 128, """Number of images to process in
 tf.app.flags.DEFINE_string('data_dir', 'qpDataset', """Path to the directory.""")
 tf.app.flags.DEFINE_string('batches_dir', ' ', """Path to the secondary data directory.""")
 tf.app.flags.DEFINE_boolean('use_fp16', False, """Train the model using fp16.""")
-tf.app.flags.DEFINE_integer('binarise_label', -1, """Binarise this label""")
+tf.app.flags.DEFINE_integer('binarise_label', 0, """Binarise this label""")
 
 #tf.app.flags.DEFINE_string('prelearned_checkpoint', '/Users/pam/Documents/data/CIFAR-10/test3/cifar10_train/train_yuv/model.ckpt-29999', """The same network architecture trained on something else""")
 
@@ -185,8 +185,8 @@ def _variable_with_weight_decay(name, shape, stddev, wd, fresh_init = True, init
 
 def binariseTheLabels(labels):
     print("All right, binarising")
-    if (FLAGS.binarise_label >= 0):
-        masky = tf.fill(labels.get_shape(), FLAGS.binarise_label)
+    if (FLAGS.binarise_label >0 ):
+        masky = tf.fill(labels.get_shape(), (FLAGS.binarise_label-1))
         labels = tf.equal(labels, masky)
     elif (FLAGS.binarise_label == -2):
         # combine labels (0,1), (2,3), (3,4) etc
@@ -196,6 +196,8 @@ def binariseTheLabels(labels):
     elif (FLAGS.binarise_label == -3):
         divvy = tf.fill(labels.get_shape(), 3)
         labels = tf.floordiv(labels, divvy)
+    else:
+        print("But not actually doing anything about the binarising")
 
     labels = tf.cast(labels, tf.int32)
     return labels
@@ -269,7 +271,7 @@ def inputs(eval_data):
 
 
 def inference_switch(images, type=1):
-    if FLAGS.binarise_label >= 0:
+    if FLAGS.binarise_label > 0:
         NUM_CLASSES = 2
         qpNet_input.NUM_CLASSES = 2
     elif FLAGS.binarise_label == -2:

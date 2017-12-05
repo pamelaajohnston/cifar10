@@ -211,7 +211,7 @@ def evaluate_orig():
 
 def evaluate(returnConfusionMatrix=True):
     num_classes = qpNet_input.NUM_CLASSES
-    if FLAGS.binarise_label >= 0:
+    if FLAGS.binarise_label > 0:
         num_classes = 2
     elif FLAGS.binarise_label == -2:
         num_classes = 4
