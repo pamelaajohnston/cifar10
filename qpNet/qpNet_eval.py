@@ -273,6 +273,8 @@ def evaluate(returnConfusionMatrix=True):
             rightNow = datetime.now()
             difference = rightNow - start
             log.write("*******************************************************\n")
+            ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
+            log.write("The checkpoint was: {} ok".format(ckpt.model_checkpoint_path))
             log.write("time: {} seconds \n".format(difference.total_seconds()))
             log.write('precision @ 1 = %.5f \n' % (precision))
             log.write('confusionMatrix: \n {} \n'.format(confusionMatrix))
