@@ -369,7 +369,69 @@ def main_UCID(argv=None):
     patchesBinFileName = "patches"
     patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 80, patchStride = 80, frameSampleStep = 1, numChannels=3)
 
+def main_UCID_smallerPatches(argv=None):
+    print("Butcher the test files (in a slightly different way")
+    startHere = '/Volumes/LaCie/data/UCID/test'
+
+    fileList = createFileList(startHere, takeAll=True)
+    for file in fileList:
+        print(file)
+
+    patchesBinFileName = "patches_test"
+    patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 1, numChannels=3)
+
+    print("Butcher the train files")
+    startHere = '/Volumes/LaCie/data/UCID/train'
+    fileList = createFileList(startHere, takeAll=True)
+    patchesBinFileName = "patches"
+    patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 1, numChannels=3)
+
+def allVid_smallerPatches(argv=None):
+    print("Butcher the test files (in a slightly different way")
+    startHere = '/Volumes/LaCie/data/yuv_quant_noDeblock_test'
+
+    fileList = createFileList(startHere)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches_test"
+    patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 60, numChannels=3)
+
+    print("Butcher the train files")
+    startHere = '/Volumes/LaCie/data/yuv_quant_noDeblock_train'
+
+    fileList = createFileList(startHere)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches"
+    patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 60, numChannels=3)
+
+
+def createPatches(argv=None):
+    print("Butcher the test files (in a slightly different way")
+    #startHere = '/Volumes/LaCie/data/yuv_quant_noDeblock_test_noNews'
+    startHere = '/Volumes/LaCie/data/UCID/validate'
+
+    fileList = createFileList(startHere, takeAll=True)
+    for file in fileList:
+        print(file)
+
+    patchesBinFileName = "patches_test"
+    patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 80, patchStride = 48, frameSampleStep = 30, numChannels=3)
+
 if __name__ == "__main__":
     #main_2()
     #encodeAllOfUCID()
-    main_UCID()
+    #main_UCID()
+    #createPatches()
+    #main_UCID_smallerPatches()
+    allVid_smallerPatches()

@@ -41,6 +41,7 @@ tf.app.flags.DEFINE_integer('num_examples', 53480, """Number of examples to run.
 tf.app.flags.DEFINE_boolean('run_once', False, """Whether to run eval only once.""")
 tf.app.flags.DEFINE_integer('network_architecture', 1, """The number of the network architecture to use (inference function) """)
 tf.app.flags.DEFINE_string('mylog_dir_eval', '/Users/pam/Documents/temp/',  """Directory where to write my logs """)
+tf.app.flags.DEFINE_integer('run_times', 0, """The number of times to run before quitting """)
 
 
 
@@ -256,6 +257,7 @@ def evaluate(returnConfusionMatrix=True):
         log = open(logfile, 'w')
         start = datetime.now()
 
+        runtimes = 0
         while True:
             #print("Calling eval_once")
             precision, confusionMatrix = eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix)
@@ -267,6 +269,8 @@ def evaluate(returnConfusionMatrix=True):
                 else:
                     return precision
                 break
+            if FLAGS.run_times != 0 and runtimes > FLAGS.run_times:
+                break
             time.sleep(FLAGS.eval_interval_secs)
             print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
             print('{}: confusionMatrix: \n {}'.format(datetime.now(), confusionMatrix))
@@ -274,12 +278,17 @@ def evaluate(returnConfusionMatrix=True):
             difference = rightNow - start
             log.write("*******************************************************\n")
             ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
-            log.write("The checkpoint was: {} ok".format(ckpt.model_checkpoint_path))
+            if ckpt and ckpt.model_checkpoint_path:
+                log.write("The checkpoint was: {} ok".format(ckpt.model_checkpoint_path))
+            else:
+                log.write("No checkpoint found yet")
             log.write("time: {} seconds \n".format(difference.total_seconds()))
             log.write('precision @ 1 = %.5f \n' % (precision))
             log.write('confusionMatrix: \n {} \n'.format(confusionMatrix))
             log.write("******************************************************* \n")
             log.flush()
+            runtimes = runtimes + 1
+            #print("The number of times run: {} out of {}".format(runtimes, FLAGS.run_times))
 
 
 def main(argv=None):  # pylint: disable=unused-argument

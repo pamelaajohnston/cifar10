@@ -20,24 +20,33 @@ import tensorflow as tf
 ##For STL-10
 #IMAGE_SIZE = 96
 #INPUT_IMAGE_SIZE = 96
-## 80x80 image patches, no random crops just yet
-IMAGE_SIZE = 80
-IMAGE_WIDTH = 80
-IMAGE_HEIGHT = 80
-INPUT_IMAGE_SIZE = 80
-INPUT_IMAGE_WIDTH = 80
-INPUT_IMAGE_HEIGHT = 80
+## test 18-22f: 80x80 image patches, no random crops just yet
+#IMAGE_SIZE = 80
+#IMAGE_WIDTH = 80
+#IMAGE_HEIGHT = 80
+#INPUT_IMAGE_SIZE = 80
+#INPUT_IMAGE_WIDTH = 80
+#INPUT_IMAGE_HEIGHT = 80
+## test 23 onwards: 32x32 image patches, no random crops just yet
+IMAGE_SIZE = 32
+IMAGE_WIDTH = 32
+IMAGE_HEIGHT = 32
+INPUT_IMAGE_SIZE = 32
+INPUT_IMAGE_WIDTH = 32
+INPUT_IMAGE_HEIGHT = 32
 
 # Number of classes
 NUM_CLASSES = 8
 # This is the number of training examples in the dataset - one epoch runs over all the examples
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 79920 # This was only the CIF images, 18 sequences, 3 for test
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 156592 # This was all of the video data as assembled by me
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 131904 # This was UCID-based
+#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 131904 # This was UCID-based (UCID_80)
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 974528 # This was UCID-based (UCID_16)
 # This is the number of test examples in the dataset - one epoch runs over all the examples
 #NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 7920  # This was only the CIF images, 18 sequences, 3 for test
 #NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 8400 # This was all of the video data as assembled by me
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 53480 # This was UCID-based
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 53480 # This was UCID-based (UCID_80)
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 118976 # This was UCID-based (UCID_16)
 
 
 def read_dataset(filename_queue):
@@ -159,13 +168,27 @@ def distorted_inputs(data_dir, batch_size, distort=False):
   # for CIFAR-10
   print("From within distorted_inputs, data_dir = {}here".format(data_dir))
   #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)]
+  #For UCID_80
   filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 14)]
+  #For UCID_16
+  filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 98)]
 
   print("And the expected filenames are {}".format(filenames))
+
+  myfilenames = []
+  for f in filenames:
+    if tf.gfile.Exists(f):
+      myfilenames.append(f)
+
+  filenames = myfilenames
+  if len(filenames) == 0:
+    raise ValueError('Failed to find any files to process')
 
   for f in filenames:
     if not tf.gfile.Exists(f):
       raise ValueError('Failed to find file: ' + f)
+    else:
+      myfilenames.append(f)
 
   # Create a queue that produces the filenames to read.
   filename_queue = tf.train.string_input_producer(filenames)
@@ -224,7 +247,10 @@ def inputs(eval_data, data_dir, batch_size):
   if not eval_data:
     #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 8)] # original based on CIF vid
     #filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 16)] # based on all video
+    #for UCID_80
     filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 14)] # based on all video
+    #for UCID_16
+    filenames = [os.path.join(data_dir, 'patches_%d.bin' % i) for i in xrange(0, 98)] # based on all video
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
   else:
     num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
