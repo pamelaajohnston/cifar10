@@ -189,8 +189,6 @@ def distorted_inputs(data_dir, batch_size, distort=False):
   for f in filenames:
     if not tf.gfile.Exists(f):
       raise ValueError('Failed to find file: ' + f)
-    else:
-      myfilenames.append(f)
 
   # Create a queue that produces the filenames to read.
   filename_queue = tf.train.string_input_producer(filenames)
