@@ -180,6 +180,8 @@ def distorted_inputs(data_dir, batch_size, distort=False):
     if tf.gfile.Exists(f):
       myfilenames.append(f)
 
+  print("And the found filenames are {}".format(filenames))
+
   filenames = myfilenames
   if len(filenames) == 0:
     raise ValueError('Failed to find any files to process')
