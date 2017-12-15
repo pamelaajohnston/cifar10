@@ -271,7 +271,8 @@ def evaluate(returnConfusionMatrix=True):
                 break
             if FLAGS.run_times != 0 and runtimes > FLAGS.run_times:
                 break
-            time.sleep(FLAGS.eval_interval_secs)
+            if FLAGS.run_times == 0: #only sleep when it's not a limited run
+                time.sleep(FLAGS.eval_interval_secs)
             print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
             print('{}: confusionMatrix: \n {}'.format(datetime.now(), confusionMatrix))
             rightNow = datetime.now()

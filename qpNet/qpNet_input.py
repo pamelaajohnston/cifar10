@@ -20,33 +20,33 @@ import tensorflow as tf
 ##For STL-10
 #IMAGE_SIZE = 96
 #INPUT_IMAGE_SIZE = 96
-## test 18-22f: 80x80 image patches, no random crops just yet
-#IMAGE_SIZE = 80
-#IMAGE_WIDTH = 80
-#IMAGE_HEIGHT = 80
-#INPUT_IMAGE_SIZE = 80
-#INPUT_IMAGE_WIDTH = 80
-#INPUT_IMAGE_HEIGHT = 80
-## test 23 onwards: 32x32 image patches, no random crops just yet
-IMAGE_SIZE = 32
-IMAGE_WIDTH = 32
-IMAGE_HEIGHT = 32
-INPUT_IMAGE_SIZE = 32
-INPUT_IMAGE_WIDTH = 32
-INPUT_IMAGE_HEIGHT = 32
+## test 18-22f, 24 onwards: 80x80 image patches, no random crops just yet
+IMAGE_SIZE = 80
+IMAGE_WIDTH = 80
+IMAGE_HEIGHT = 80
+INPUT_IMAGE_SIZE = 80
+INPUT_IMAGE_WIDTH = 80
+INPUT_IMAGE_HEIGHT = 80
+## test 23: 32x32 image patches, no random crops just yet
+#IMAGE_SIZE = 32
+#IMAGE_WIDTH = 32
+#IMAGE_HEIGHT = 32
+#INPUT_IMAGE_SIZE = 32
+#INPUT_IMAGE_WIDTH = 32
+#INPUT_IMAGE_HEIGHT = 32
 
 # Number of classes
 NUM_CLASSES = 8
 # This is the number of training examples in the dataset - one epoch runs over all the examples
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 79920 # This was only the CIF images, 18 sequences, 3 for test
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 156592 # This was all of the video data as assembled by me
-#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 131904 # This was UCID-based (UCID_80)
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 974528 # This was UCID-based (UCID_16)
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 131904 # This was UCID-based (UCID_80)
+#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 974528 # This was UCID-based (UCID_16)
 # This is the number of test examples in the dataset - one epoch runs over all the examples
 #NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 7920  # This was only the CIF images, 18 sequences, 3 for test
 #NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 8400 # This was all of the video data as assembled by me
-#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 53480 # This was UCID-based (UCID_80)
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 118976 # This was UCID-based (UCID_16)
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 53480 # This was UCID-based (UCID_80)
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 118976 # This was UCID-based (UCID_16)
 
 
 def read_dataset(filename_queue):
