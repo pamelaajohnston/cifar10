@@ -110,7 +110,7 @@ def createVideoFromFrame(data, filename, numframes, width, height, offset = 8):
 
 
 
-def compressFile(app, yuvfilename, w, h, qp, outcomp, outdecomp, deblock = True, verbose = False):
+def compressFile(app, yuvfilename, w, h, qp, outcomp, outdecomp, deblock = True, intraOnly = False, verbose = False):
     if verbose:
         print("************Compressing the yuv************")
     inputres = '{}x{}'.format(w,h)
@@ -119,10 +119,13 @@ def compressFile(app, yuvfilename, w, h, qp, outcomp, outdecomp, deblock = True,
     #if sys.platform == 'win32':
         #app = "..\\x264\\x264.exe"
         #appargs = '-o {} -q {} --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {}'.format(outcomp, qp, inputres, outdecomp, yuvfilename)
-    appargs = '-o {} -q {} --ipratio 1.0 --pbratio 1.0 --no-psy --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {} --no-deblock'.format(outcomp, qp, inputres, outdecomp, yuvfilename)
-    if deblock:
-        appargs = '-o {} -q {} --ipratio 1.0 --pbratio 1.0 --no-psy --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {}'.format(outcomp, qp, inputres, outdecomp, yuvfilename)
+    appargs = '-o {} -q {} --ipratio 1.0 --pbratio 1.0 --no-psy --input-csp i420 --output-csp i420 --input-res {} --dump-yuv {} {}'.format(outcomp, qp, inputres, outdecomp, yuvfilename)
+    if deblock == False:
+        appargs = appargs + ' --no-deblock'
+    if intraOnly:
+        appargs = appargs + ' -I 1'
 
+    ####### WARNING WARNING constant bitrate is totally different!!!) #####################
     if qp > 100:
         #it's bitrate, not qp, set up args accordingly (bitrate in kbps)
         kbps = int((qp+512)/1024)
@@ -130,7 +133,7 @@ def compressFile(app, yuvfilename, w, h, qp, outcomp, outdecomp, deblock = True,
     # IBBP: 2 b-frames
     #appargs += ' -b 2 --b-adapt 0'
     
-    #print appargs
+    print appargs
 
     exe = app + " " + appargs
     #print exe

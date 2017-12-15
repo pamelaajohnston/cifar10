@@ -61,8 +61,8 @@ def createFileList(myDir, takeAll = False, format='.yuv'):
     #print(fileList)
     return fileList
 
-def encodeAWholeFolderAsH264(myDir):
-    fileList = createFileList()
+def encodeAWholeFolderAsH264(myDir, takeAll=False, intraOnly=False, deblock=False):
+    fileList = createFileList(myDir, takeAll=takeAll)
 
     for quant in quants:
         # make a directory
@@ -83,7 +83,7 @@ def encodeAWholeFolderAsH264(myDir):
             print("width: {} height: {} filename:{}".format(entry[1], entry[2], entry[0]))
             h264Filename = "{}_q{}.h264".format(baseFileName, quant)
             compYuvFilename = "{}_q{}.yuv".format(baseFileName, quant)
-            isize, psize, bsize = functions.compressFile(x264, filename, width, height, quant, h264Filename, compYuvFilename)
+            isize, psize, bsize = functions.compressFile(x264, filename, width, height, quant, h264Filename, compYuvFilename, intraOnly=intraOnly, deblock=deblock)
 
 import re
 
@@ -352,6 +352,10 @@ def encodeAllOfUCID():
     ucidData = '/Volumes/LaCie/data/UCID/train'
     encodeAWholeFolderOfImagesAsSingleH264Frames(ucidData)
 
+def encodeVidIntraFrames():
+    myDir = '/Volumes/LaCie/data/yuv'
+    encodeAWholeFolderAsH264(myDir, takeAll=True, intraOnly=True, deblock=True)
+
 def main_UCID(argv=None):
     print("Butcher the test files (in a slightly different way")
     startHere = '/Volumes/LaCie/data/UCID/test'
@@ -386,6 +390,23 @@ def main_UCID_smallerPatches(argv=None):
     patchesBinFileName = "patches"
     patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 1, numChannels=3)
 
+def main_UCID_smallerPatches_fewer(argv=None):
+    print("Butcher the test files (in a slightly different way")
+    startHere = '/Volumes/LaCie/data/UCID/test'
+
+    fileList = createFileList(startHere, takeAll=True)
+    for file in fileList:
+        print(file)
+
+    patchesBinFileName = "patches_test"
+    patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 32, patchStride = 80, frameSampleStep = 1, numChannels=3)
+
+    print("Butcher the train files")
+    startHere = '/Volumes/LaCie/data/UCID/train'
+    fileList = createFileList(startHere, takeAll=True)
+    patchesBinFileName = "patches"
+    patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 32, patchStride = 80, frameSampleStep = 1, numChannels=3)
+
 def allVid_smallerPatches(argv=None):
     print("Butcher the test files (in a slightly different way")
     startHere = '/Volumes/LaCie/data/yuv_quant_noDeblock_test'
@@ -415,6 +436,92 @@ def allVid_smallerPatches(argv=None):
     patchesBinFileName = "patches"
     patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 60, numChannels=3)
 
+def cifVidIntra_smallerPatches(argv=None):
+    print("Butcher the test files (in a slightly different way")
+    startHere = '/Volumes/LaCie/data/yuv_quant_intraOnly_noDeblock_test'
+
+    fileList = createFileList(startHere)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches_test"
+    patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 60, numChannels=3)
+
+    print("Butcher the train files")
+    startHere = '/Volumes/LaCie/data/yuv_quant_intraOnly_noDeblock_train'
+
+    fileList = createFileList(startHere)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches"
+    patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 60, numChannels=3)
+
+def allVidIntra_smallerPatches(argv=None):
+    print("Butcher the test files (in a slightly different way")
+    startHere = '/Volumes/LaCie/data/yuv_quant_intraOnly_noDeblock_test'
+
+    fileList = createFileList(startHere, takeAll=True)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches_test"
+    patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 60, numChannels=3)
+
+    print("Butcher the train files")
+    startHere = '/Volumes/LaCie/data/yuv_quant_intraOnly_noDeblock_train'
+
+    fileList = createFileList(startHere, takeAll=True)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches"
+    patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 32, patchStride = 32, frameSampleStep = 60, numChannels=3)
+
+def allVidIntra_Patches(argv=None):
+    print("Butcher the test files (in a slightly different way")
+    startHere = '/Volumes/LaCie/data/yuv_quant_intraOnly_noDeblock_test'
+
+    fileList = createFileList(startHere, takeAll=True)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches_test"
+    patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 80, patchStride = 48, frameSampleStep = 30, numChannels=3)
+
+    print("Butcher the train files")
+    startHere = '/Volumes/LaCie/data/yuv_quant_intraOnly_noDeblock_train'
+
+    fileList = createFileList(startHere, takeAll=True)
+
+    for file in fileList:
+        print(file)
+
+    #quit()
+
+    #patchesBinFileName = "{}/patches.bin".format(startHere)
+    patchesBinFileName = "patches"
+    patchArray = extractPatches(fileList, patchesBinFileName, patchDim = 80, patchStride = 80, frameSampleStep = 40, numChannels=3)
 
 def createPatches(argv=None):
     print("Butcher the test files (in a slightly different way")
@@ -430,8 +537,19 @@ def createPatches(argv=None):
 
 if __name__ == "__main__":
     #main_2()
+
+    # For UCID - all of these will be intra frames!
     #encodeAllOfUCID()
     #main_UCID()
     #createPatches()
+
+    # a smaller patches dataset
     #main_UCID_smallerPatches()
-    allVid_smallerPatches()
+    #allVid_smallerPatches()
+
+    # Trying out an intra-only dataset
+    #encodeVidIntraFrames()
+    #cifVidIntra_smallerPatches()
+    #allVidIntra_smallerPatches()
+    allVidIntra_Patches()
+    #main_UCID_smallerPatches_fewer()
