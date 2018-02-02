@@ -294,12 +294,17 @@ def evaluate(returnConfusionMatrix=True):
             log.write("*******************************************************\n")
             ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
             if ckpt and ckpt.model_checkpoint_path:
-                log.write("The checkpoint was: {} ok".format(ckpt.model_checkpoint_path))
+                log.write("The checkpoint was: {} ok now".format(ckpt.model_checkpoint_path))
             else:
                 log.write("No checkpoint found yet")
             log.write("time: {} seconds \n".format(difference.total_seconds()))
             log.write('precision @ 1 = %.5f \n' % (precision))
-            log.write('confusionMatrix: \n {} \n'.format(confusionMatrix))
+            #log.write('confusionMatrix: \n {} \n'.format(confusionMatrix))
+            cmString = np.array2string(confusionMatrix, separator='\t')
+            cmString = cmString.replace('[', '')
+            cmString = cmString.replace(']', '')
+            log.write('confusionMatrix: \n {} \n'.format(cmString))
+
             log.write("******************************************************* \n")
             log.flush()
             runtimes = runtimes + 1
