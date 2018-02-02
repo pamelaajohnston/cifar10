@@ -90,8 +90,16 @@ import re
 def getQuant(inputString):
     print(inputString)
     m = re.search('(?<=quant_)(\d{1,2})', inputString)
-    quant = int(m.group(0))
-    quant = quant/7
+    if m:
+        quant = int(m.group(0))
+        quant = quant/7
+    else:
+        print("Didn't find the right quant")
+        m = re.search('(?<=_q)(\d{1,2})', inputString)
+        quant = int(m.group(0))
+        print("But found {}".format(quant))
+        quant = quant/7
+
     return quant
 
 def extractPatches(fileList, outFileBaseName, patchDim = 80, patchStride = 48, frameSampleStep = 30, numChannels=3):
@@ -179,6 +187,9 @@ def extractPatches(fileList, outFileBaseName, patchDim = 80, patchStride = 48, f
     outFileName = "{}_{}.bin".format(outFileBaseName, filesWritten)
     functions.appendToFile(patches_array, outFileName)
 
+# This function does the same as the above except it puts all the patches with a single quant value (label) in a single bin file.
+# extractPatches() above extracts patches from random files (one whole file at a time) until it has sufficient patches to fill a bin file;
+# Then it shuffles them and writes to file. extractPatches_byQuant() doesn't do any shuffling.
 def extractPatches_byQuant(fileList, outFileBaseName, patchDim = 80, patchStride = 48, frameSampleStep = 30, numChannels=3):
     patchesList = []
     numPatches = 0
@@ -535,6 +546,219 @@ def createPatches(argv=None):
     patchesBinFileName = "patches_test"
     patchArray = extractPatches_byQuant(fileList, patchesBinFileName, patchDim = 80, patchStride = 48, frameSampleStep = 30, numChannels=3)
 
+def addABorder(data, width, height, leftPels, rightPels, topPels, bottomPels):
+    newWidth = width + leftPels + rightPels
+    newHeight = height + topPels + bottomPels
+
+    pixels = data.reshape(3, height, width)
+    y = pixels[0]
+    u = pixels[1]
+    v = pixels[2]
+    #yuvpixels = []
+    # First the Y (0 for a black border)
+    top = np.full([topPels, newWidth], 0)
+    bottom = np.full([bottomPels, newWidth], 0)
+    left = np.full([1, leftPels], 0)
+    right = np.full([1, rightPels], 0)
+    yuvpixels = top
+    print("number of pixels = {}".format(np.size(yuvpixels)))
+    for yrow in y:
+        row = np.append(left, yrow)
+        row = np.append(row, right)
+        yuvpixels = np.append(yuvpixels, row)
+        print("row length = {}".format(np.size(row)))
+        print("number of pixels = {}".format(np.size(yuvpixels)))
+    yuvpixels = np.append(yuvpixels, bottom)
+
+    print("number of pixels = {}".format(np.size(yuvpixels)))
+
+    # Now the U and V (128 for a black border)
+    top = np.full([topPels, newWidth], 128)
+    bottom = np.full([topPels, newWidth], 128)
+    left = np.full([1, leftPels], 128)
+    right = np.full([1, rightPels], 128)
+    yuvpixels = np.append(yuvpixels, top)
+    for urow in u:
+        row = np.append(left, urow)
+        row = np.append(row, right)
+        yuvpixels = np.append(yuvpixels, row)
+    yuvpixels = np.append(yuvpixels, bottom)
+    # And V
+    yuvpixels = np.append(yuvpixels, top)
+    for vrow in v:
+        row = np.append(left, vrow)
+        row = np.append(row, right)
+        yuvpixels = np.append(yuvpixels, row)
+    yuvpixels = np.append(yuvpixels, bottom)
+
+
+
+    return yuvpixels, newWidth, newHeight
+
+def prepareDataForHeatMapGeneration():
+    print("Preparing a bin file that's suitable for a heat map")
+    patchDim = 80
+    patchStride = 16 # for macroblock-ness
+    fileList = [['/Users/pam/Documents/data/yuv/flower_1f_q0.yuv', 352, 288],
+                ['/Users/pam/Documents/data/yuv/flower_1f_q7.yuv', 352, 288],
+                ['/Users/pam/Documents/data/yuv/flower_1f_q14.yuv', 352, 288],
+                ['/Users/pam/Documents/data/yuv/flower_1f_q21.yuv', 352, 288],
+                ['/Users/pam/Documents/data/yuv/flower_1f_q28.yuv', 352, 288],
+                ['/Users/pam/Documents/data/yuv/flower_1f_q35.yuv', 352, 288],
+                ['/Users/pam/Documents/data/yuv/flower_1f_q42.yuv', 352, 288],
+                ['/Users/pam/Documents/data/yuv/flower_1f_q49.yuv', 352, 288]]
+    for file in fileList:
+        filename = file[0]
+        fileBaseName, ext = os.path.splitext(filename)
+        width = file[1]
+        height = file[2]
+        frameSize = height * width * 3/2 # for i420 only
+        quant = getQuant(filename)
+        print("The quant for {} is {}".format(quant, filename))
+        with open(filename, "rb") as f:
+            allTheData = np.fromfile(f, 'u1')
+        print(allTheData.shape)
+        numFrames = allTheData.shape[0] / frameSize
+        print("There's {} frames".format(numFrames))
+
+        frameData = allTheData
+        frame444 = functions.YUV420_2_YUV444(frameData, height, width)
+        frame444, newWidth, newHeight = addABorder(frame444, 352, 288, 32, 32, 32, 32)
+        outFileName = "{}.YUV444_{}x{}".format(fileBaseName, newWidth, newHeight)
+        functions.appendToFile(frame444, outFileName)
+
+        # And now the generation of patches
+        patchesList = []
+        numPatches = 0
+        filesWritten = 0
+        frameData = frame444
+        ySize = newWidth * newHeight
+        uvSize = newWidth * newHeight
+        yData = frameData[0:ySize]
+        uData = frameData[ySize:(ySize + uvSize)]
+        vData = frameData[(ySize + uvSize):(ySize + uvSize + uvSize)]
+        # print("yData shape: {}".format(yData.shape))
+        # print("uData shape: {}".format(uData.shape))
+        # print("vData shape: {}".format(vData.shape))
+        yData = yData.reshape(newHeight, newWidth)
+        uData = uData.reshape(newHeight, newWidth)
+        vData = vData.reshape(newHeight, newWidth)
+        pixelSample = 0
+        xCo = 0
+        yCo = 0
+        maxPixelSample = ((newHeight - patchDim) * newWidth) + (newWidth - patchDim)
+        # print("maxPixelSample: {}".format(maxPixelSample))
+        while yCo <= (newHeight - patchDim):
+            # print("Taking sample from: ({}, {})".format(xCo, yCo))
+            patchY = yData[yCo:(yCo + patchDim), xCo:(xCo + patchDim)]
+            patchU = uData[yCo:(yCo + patchDim), xCo:(xCo + patchDim)]
+            patchV = vData[yCo:(yCo + patchDim), xCo:(xCo + patchDim)]
+
+            # print("patch dims: y {} u {} v {}".format(patchY.shape, patchU.shape, patchV.shape))
+            yuv = np.concatenate(
+                (np.divide(patchY.flatten(), 8), np.divide(patchU.flatten(), 8), np.divide(patchV.flatten(), 8)),
+                axis=0)
+            # print("patch dims: {}".format(yuv.shape))
+            yuv = yuv.flatten()
+            datayuv = np.concatenate((np.array([quant]), yuv), axis=0)
+            datayuv = datayuv.flatten()
+            patchesList.append(datayuv)
+            numPatches = numPatches + 1
+
+            xCo = xCo + patchStride
+            if xCo > (newWidth - patchDim):
+                xCo = 0
+                yCo = yCo + patchStride
+            pixelSample = (yCo * newWidth) + xCo
+
+            patches_array = np.array(patchesList)
+            print("Dims: {}, numPatches {}".format(patches_array.shape, numPatches))
+            ############## Here's where you name the files!!!!###########
+            outFileName = "{}.bin".format(fileBaseName)
+            outFileName = "patches_test_{}.bin".format(quant)
+            functions.appendToFile(patches_array, outFileName)
+            patchesList = []
+
+        #Add more "patches" so that we have blank patches up to a multiple of 128 (batch size)
+        batchPatchNum = (np.ceil(numPatches/128.0) * 128) - numPatches
+        print("Adding a further {} patches to round to batches".format(batchPatchNum))
+        patchY = np.full([patchDim, patchDim], 0)
+        patchU = np.full([patchDim, patchDim], 128)
+        patchV = np.full([patchDim, patchDim], 128)
+        while batchPatchNum > 0:
+            yuv = np.concatenate(
+                (np.divide(patchY.flatten(), 8), np.divide(patchU.flatten(), 8), np.divide(patchV.flatten(), 8)),
+                axis=0)
+            # print("patch dims: {}".format(yuv.shape))
+            yuv = yuv.flatten()
+            datayuv = np.concatenate((np.array([quant]), yuv), axis=0)
+            datayuv = datayuv.flatten()
+            patchesList.append(datayuv)
+            patches_array = np.array(patchesList)
+            functions.appendToFile(patches_array, outFileName)
+            patchesList = []
+            batchPatchNum = batchPatchNum - 1
+
+def forKyle():
+    path = "/Volumes/LaCie/data/CIFAR-10/cifar_data_constantQuant/cifar-10-batches-bin_yuv"
+    myfiles = ['data_batch_1',]
+    width = 32
+    height = 32
+    channels = 3
+
+    for myfile in myfiles:
+        thefile = os.path.join(path, myfile)
+        thefile = '{}.bin'.format(thefile)
+        f = open(thefile, 'rb')
+        allTheData = np.fromfile(f, 'u1')
+        print(allTheData.shape)
+        recordSize = (width * height * channels) + 1
+        num_cases_per_batch = allTheData.shape[0] / recordSize
+        allTheData = allTheData.reshape(num_cases_per_batch, recordSize)
+        indexes = np.argsort(allTheData[:, 0])
+
+        sortedData = allTheData[indexes]
+        print("sortedData: {}".format(sortedData[0]))
+        print("sortedData: {}".format(sortedData[1]))
+        print("sortedData: {}".format(sortedData[2]))
+        print("...")
+        print("sortedData: {}".format(sortedData[-3]))
+        print("sortedData: {}".format(sortedData[-2]))
+        print("sortedData: {}".format(sortedData[-1]))
+        #for idx, id in enumerate(indexes):
+        #    mapFile.write("{} {} {} {} \n".format(fileName, id, "newfile", idx))
+
+        sarrays = np.split(sortedData, np.where(np.diff(sortedData[:, 0]))[0] + 1)
+        print("Now we have {} arrays".format(len(sarrays)))
+        leftData = []
+        leftData = np.array(leftData)
+        #takenData = []
+
+        for idx, myArray in enumerate(sarrays):
+            if idx == 0 or idx == 8:
+                print("The size of the array: {}".format(myArray.size))
+                print(myArray)
+                #leftData.append(myArray[0:, 0:])
+                leftData = np.append(leftData, myArray)
+            #else:
+            #    leftData.append(myArray[takeNum:, :])
+
+        leftData = np.asarray(leftData, 'u1')
+        leftData = leftData.flatten()
+        #print("The size of the selected labels {}".format(leftData.size))
+        #leftData = leftData.reshape(leftData.shape[0])
+        print("The left data with size: {}".format(leftData.size))
+        print(leftData)
+        #leftData = np.asarray(leftData, 'u1')
+        leftData = bytearray(leftData)
+        leftName = '{}_onlyLabels0and8.bin'.format(myfile)
+        with open(leftName, 'wb') as f:
+            f.write(leftData)
+
+
+
+
+
 if __name__ == "__main__":
     #main_2()
 
@@ -551,5 +775,11 @@ if __name__ == "__main__":
     #encodeVidIntraFrames()
     #cifVidIntra_smallerPatches()
     #allVidIntra_smallerPatches()
-    allVidIntra_Patches()
+    #allVidIntra_Patches()
     #main_UCID_smallerPatches_fewer()
+
+    #prepareDataForHeatMapGeneration()
+
+    forKyle()
+
+

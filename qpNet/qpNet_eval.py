@@ -103,7 +103,8 @@ def eval_once_orig(saver, summary_writer, top_k_op, summary_op):
 
 
 
-def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
+def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix, predLabels):
+#def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
 #def eval_once(saver, summary_writer, top_k_op, summary_op):
 
     """Run Eval once.
@@ -139,14 +140,20 @@ def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
             total_sample_count = num_iter * FLAGS.batch_size
             step = 0
             while step < num_iter and not coord.should_stop():
-                predictions, batchConfusionMatrix = sess.run([top_k_op, gen_confusionMatrix])
+                predictions, batchConfusionMatrix, mypreds = sess.run([top_k_op, gen_confusionMatrix, predLabels])
                 batchConfusionMatrix = np.asarray(batchConfusionMatrix)
+                batchPredictions = np.asarray(predictions)
+                batchMypreds = np.asarray(mypreds)
+                #print("Step: {} and predictions: \n {}".format(step, batchPredictions))
+                #print("Step: {} and logits: \n {}".format(step, batchMypreds))
                 batchConfusionMatrix = batchConfusionMatrix.reshape((qpNet_input.NUM_CLASSES, qpNet_input.NUM_CLASSES))
                 if step == 0:
                     #confusionMatrix = np.asarray(tf.unstack(batchConfusionMatrix))
                     confusionMatrix = batchConfusionMatrix
+                    allPredLabels = batchMypreds
                 else:
                     confusionMatrix = np.add(confusionMatrix, batchConfusionMatrix)
+                    allPredLabels = np.append(allPredLabels, batchMypreds)
                 #numRight = np.sum(predictions)
                 #print("test step {} of {} ".format(step, num_iter))
                 #print("We got {} correct".format(numRight))
@@ -166,13 +173,15 @@ def eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix):
             summary.ParseFromString(sess.run(summary_op))
             summary.value.add(tag='Precision @ 1', simple_value=precision)
             summary_writer.add_summary(summary, global_step)
+            #print("Predicted labels for {}: \n {}".format(step, allPredLabels))
+
         except Exception as e:  # pylint: disable=broad-except
             coord.request_stop(e)
 
         coord.request_stop()
         coord.join(threads, stop_grace_period_secs=10)
         #return precision
-        return precision, confusionMatrix
+        return precision, confusionMatrix, allPredLabels
 
 
 
@@ -260,7 +269,7 @@ def evaluate(returnConfusionMatrix=True):
         runtimes = 0
         while True:
             #print("Calling eval_once")
-            precision, confusionMatrix = eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix)
+            precision, confusionMatrix, predLabels = eval_once(saver, summary_writer, top_k_op, summary_op, gen_confusionMatrix, predictions)
             #precision = eval_once(saver, summary_writer, top_k_op, summary_op)
             if FLAGS.run_once:
                 if returnConfusionMatrix:
@@ -275,6 +284,11 @@ def evaluate(returnConfusionMatrix=True):
                 time.sleep(FLAGS.eval_interval_secs)
             print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
             print('{}: confusionMatrix: \n {}'.format(datetime.now(), confusionMatrix))
+            #print('AND predictions: \n {}'.format(predLabels))
+            print('AND predictions: \n')
+            print("{}".format(repr(predLabels)))
+            avg = np.average(predLabels)
+            print("Average is {}".format(avg))
             rightNow = datetime.now()
             difference = rightNow - start
             log.write("*******************************************************\n")
