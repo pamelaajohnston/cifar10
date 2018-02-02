@@ -178,8 +178,8 @@ def train():
                                     staircase=True)
 
     # Create an optimizer that performs gradient descent.
-    opt = tf.train.GradientDescentOptimizer(lr)
-    #opt = tf.train.AdamOptimizer(lr)
+    #opt = tf.train.GradientDescentOptimizer(lr)
+    opt = tf.train.AdamOptimizer()
 
     # Calculate the gradients for each model tower.
     tower_grads = []

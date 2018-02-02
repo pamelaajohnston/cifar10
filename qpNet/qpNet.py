@@ -2305,7 +2305,7 @@ def train_orig(total_loss, global_step):
   return train_op
 
 
-def train(total_loss, global_step):
+def train_adam(total_loss, global_step):
   """Train model.
 
   Create an optimizer and apply to all trainable variables. Add moving
