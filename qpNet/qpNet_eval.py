@@ -286,6 +286,7 @@ def evaluate(returnConfusionMatrix=True):
             print('{}: confusionMatrix: \n {}'.format(datetime.now(), confusionMatrix))
             #print('AND predictions: \n {}'.format(predLabels))
             print('AND predictions: \n')
+            np.set_printoptions(threshold='nan')
             print("{}".format(repr(predLabels)))
             avg = np.average(predLabels)
             print("Average is {}".format(avg))

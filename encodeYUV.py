@@ -4,6 +4,7 @@ import functions
 import shlex, subprocess
 import numpy as np
 import time
+import re
 
 # A function to get the QP for each MB from a bunch of video files and histogram it (or something)
 
@@ -31,6 +32,9 @@ fileSizes = [
     ['1080p', 1920, 1080]
 ]
 
+quantDiv = 6
+quants = [0, 6, 12, 18, 24, 30, 36, 42, 48]
+quantDiv = 7
 quants = [0, 7, 14, 21, 28, 35, 42, 49]
 
 def createFileList(myDir, takeAll = False, format='.yuv'):
@@ -38,6 +42,7 @@ def createFileList(myDir, takeAll = False, format='.yuv'):
     index = 0
     # First, create a list of the files to encode, along with dimensions
     for (dirName, subdirList, filenames) in os.walk(myDir):
+        print(filenames)
         for filename in filenames:
             if filename.endswith(format):
                 if takeAll or '_cif' in filename:
@@ -61,8 +66,11 @@ def createFileList(myDir, takeAll = False, format='.yuv'):
     #print(fileList)
     return fileList
 
+
 def encodeAWholeFolderAsH264(myDir, takeAll=False, intraOnly=False, deblock=False):
     fileList = createFileList(myDir, takeAll=takeAll)
+    print("The file list:")
+    print(fileList)
 
     for quant in quants:
         # make a directory
@@ -85,20 +93,19 @@ def encodeAWholeFolderAsH264(myDir, takeAll=False, intraOnly=False, deblock=Fals
             compYuvFilename = "{}_q{}.yuv".format(baseFileName, quant)
             isize, psize, bsize = functions.compressFile(x264, filename, width, height, quant, h264Filename, compYuvFilename, intraOnly=intraOnly, deblock=deblock)
 
-import re
 
 def getQuant(inputString):
     print(inputString)
     m = re.search('(?<=quant_)(\d{1,2})', inputString)
     if m:
         quant = int(m.group(0))
-        quant = quant/7
+        quant = quant/quantDiv
     else:
         print("Didn't find the right quant")
         m = re.search('(?<=_q)(\d{1,2})', inputString)
         quant = int(m.group(0))
         print("But found {}".format(quant))
-        quant = quant/7
+        quant = quant/quantDiv
 
     return quant
 
@@ -607,13 +614,19 @@ def prepareDataForHeatMapGeneration():
                 ['/Users/pam/Documents/data/yuv/flower_1f_q35.yuv', 352, 288],
                 ['/Users/pam/Documents/data/yuv/flower_1f_q42.yuv', 352, 288],
                 ['/Users/pam/Documents/data/yuv/flower_1f_q49.yuv', 352, 288]]
+    fileList = [['/Users/pam/Documents/data/SULFA/forged_sequences_avi/01_forged_1f.yuv', 320, 240],
+                ['/Users/pam/Documents/data/SULFA/forged_sequences_avi/01_original_1f.yuv', 320, 240]]
+    fileList = [['/Users/pam/Documents/data/DeepFakes/creepy2_1f.yuv', 1280, 720]]
     for file in fileList:
         filename = file[0]
         fileBaseName, ext = os.path.splitext(filename)
         width = file[1]
         height = file[2]
         frameSize = height * width * 3/2 # for i420 only
-        quant = getQuant(filename)
+        try:
+            quant = getQuant(filename)
+        except:
+            quant = 0
         print("The quant for {} is {}".format(quant, filename))
         with open(filename, "rb") as f:
             allTheData = np.fromfile(f, 'u1')
@@ -623,7 +636,7 @@ def prepareDataForHeatMapGeneration():
 
         frameData = allTheData
         frame444 = functions.YUV420_2_YUV444(frameData, height, width)
-        frame444, newWidth, newHeight = addABorder(frame444, 352, 288, 32, 32, 32, 32)
+        frame444, newWidth, newHeight = addABorder(frame444, width, height, 32, 32, 32, 32)
         outFileName = "{}.YUV444_{}x{}".format(fileBaseName, newWidth, newHeight)
         functions.appendToFile(frame444, outFileName)
 
@@ -756,8 +769,86 @@ def forKyle():
             f.write(leftData)
 
 
+def processMyldecodOP(filename):
+    #filename = "/Users/pam/Documents/data/Parkinsons/op2.txt"
+    intras = []
+    skippeds = []
+    mvs = []
+    qps = []
+    frameCount = 0
 
+    with open(filename, "r") as f:
+        for line in f:
+            print(line)
+            line.strip()
+            line = line.replace("\n", "")
+            line = line.split(';')
+            print(line)
+            if "Frame" not in line[0]:
+                continue
+            for terms in line:
+                terms = terms.strip()
+                terms = (terms).split(':')
+                print("First term: {}".format(terms[0]))
+                if terms[0] == "qp":
+                    qps.append(terms[1])
+                elif terms[0] == "intra":
+                    intras.append(terms[1])
+                elif terms[0] == "skipped":
+                    skippeds.append(terms[1])
+                elif terms[0] == "motion vectors":
+                    mvs.append(terms[1])
+                elif terms[0] == "Frame":
+                    frameNo = terms[1]
+                elif terms[0] == "MB no":
+                    print("This is macroblock number {}".format(terms[1]))
+                    if terms[1] == 0:
+                        frameCount = frameCount + 1
 
+    print(qps)
+
+def createFileList2(myDir, format='.jpg'):
+    fileList = []
+    print(myDir)
+    for root, dirs, files in os.walk(myDir, topdown=False):
+        for name in files:
+            if name.endswith(format):
+                fullName = os.path.join(root, name)
+                fileList.append(fullName)
+    return fileList
+
+def jpgsToCsv(dir):
+    from PIL import Image
+    import numpy as np
+    import sys
+    import os
+    import csv
+
+    #dir = "/Users/pam/Documents/data/pictures/"
+    fileList = createFileList2(dir)
+
+    for file in fileList:
+        print(file)
+        img_file = Image.open(file)
+        # img_file.show()
+
+        # get original image parameters...
+        width, height = img_file.size
+        format = img_file.format
+        mode = img_file.mode
+
+        # Make image Greyscale
+        img_grey = img_file.convert('L')
+        #img_grey.save('result.png')
+        #img_grey.show()
+
+        # Save Greyscale values
+        value = np.asarray(img_grey.getdata(), dtype=np.int).reshape((img_grey.size[1], img_grey.size[0]))
+        value = value.flatten()
+        print(value)
+        with open("img_pixels.csv", 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(value)
 
 if __name__ == "__main__":
     #main_2()
@@ -778,8 +869,7 @@ if __name__ == "__main__":
     #allVidIntra_Patches()
     #main_UCID_smallerPatches_fewer()
 
-    #prepareDataForHeatMapGeneration()
+    prepareDataForHeatMapGeneration()
 
-    forKyle()
-
+    #forKyle()
 
