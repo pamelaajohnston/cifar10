@@ -37,6 +37,12 @@ quants = [0, 6, 12, 18, 24, 30, 36, 42, 48]
 quantDiv = 7
 quants = [0, 7, 14, 21, 28, 35, 42, 49]
 
+def getFile_Name_Width_Height(fileName):
+    for fileSize in fileSizes:
+        if fileSize[0] in fileName:
+            return fileName, fileSize[1], fileSize[2]
+
+
 def createFileList(myDir, takeAll = False, format='.yuv'):
     fileList = []
     index = 0
@@ -51,11 +57,16 @@ def createFileList(myDir, takeAll = False, format='.yuv'):
                     print("The filename is {} baseFileName {}".format(fileName, baseFileName))
 
                     if format=='.yuv':
-                        for fileSize in fileSizes:
-                            if fileSize[0] in fileName:
-                                tuple = [fileName, fileSize[1], fileSize[2]]
-                                fileList.append(tuple)
-                                break
+                        #for fileSize in fileSizes:
+                        #    if fileSize[0] in fileName:
+                        #        tuple = [fileName, fileSize[1], fileSize[2]]
+                        #        fileList.append(tuple)
+                        #        break
+                        #Untested replacement code
+                        f, w, h = getFile_Name_Width_Height(fileName)
+                        tuple = [f,w,h]
+                        fileList.append(tuple)
+
                     elif format=='.tif':
                         tuple = [fileName, -1, -1]
                         fileList.append(tuple)
@@ -193,6 +204,8 @@ def extractPatches(fileList, outFileBaseName, patchDim = 80, patchStride = 48, f
     np.random.shuffle(patches_array)
     outFileName = "{}_{}.bin".format(outFileBaseName, filesWritten)
     functions.appendToFile(patches_array, outFileName)
+
+
 
 # This function does the same as the above except it puts all the patches with a single quant value (label) in a single bin file.
 # extractPatches() above extracts patches from random files (one whole file at a time) until it has sufficient patches to fill a bin file;
@@ -568,16 +581,16 @@ def addABorder(data, width, height, leftPels, rightPels, topPels, bottomPels):
     left = np.full([1, leftPels], 0)
     right = np.full([1, rightPels], 0)
     yuvpixels = top
-    print("number of pixels = {}".format(np.size(yuvpixels)))
+    #print("number of pixels = {}".format(np.size(yuvpixels)))
     for yrow in y:
         row = np.append(left, yrow)
         row = np.append(row, right)
         yuvpixels = np.append(yuvpixels, row)
-        print("row length = {}".format(np.size(row)))
-        print("number of pixels = {}".format(np.size(yuvpixels)))
+        #print("row length = {}".format(np.size(row)))
+        #print("number of pixels = {}".format(np.size(yuvpixels)))
     yuvpixels = np.append(yuvpixels, bottom)
 
-    print("number of pixels = {}".format(np.size(yuvpixels)))
+    #print("number of pixels = {}".format(np.size(yuvpixels)))
 
     # Now the U and V (128 for a black border)
     top = np.full([topPels, newWidth], 128)

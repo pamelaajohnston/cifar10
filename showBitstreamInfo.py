@@ -40,14 +40,14 @@ fileSizes = [
 
 quants = [0, 7, 14, 21, 28, 35, 42, 49]
 
-def createFileList(myDir, takeAll = False, format='.yuv'):
+def createFileList(myDir, takeAll = False, format='.yuv', desiredNamePart = '_cif', shuffle=True):
     fileList = []
     index = 0
     # First, create a list of the files to encode, along with dimensions
     for (dirName, subdirList, filenames) in os.walk(myDir):
         for filename in filenames:
             if filename.endswith(format):
-                if takeAll or '_cif' in filename:
+                if takeAll or desiredNamePart in filename:
                     fileName = os.path.join(myDir, dirName, filename)
                     baseFileName, ext = os.path.splitext(filename)
                     print("The filename is {} baseFileName {}".format(fileName, baseFileName))
@@ -62,9 +62,13 @@ def createFileList(myDir, takeAll = False, format='.yuv'):
                         tuple = [fileName, -1, -1]
                         fileList.append(tuple)
 
+                    else:
+                        fileList.append(fileName)
+
     #hacky hack
     #fileList = [['/Volumes/LaCie/data/yuv_quant_noDeblock/quant_0/mobile_cif_q0.yuv', 352, 288],]
-    random.shuffle(fileList)
+    if shuffle:
+        random.shuffle(fileList)
     #print(fileList)
     return fileList
 
@@ -206,9 +210,7 @@ def demuxFromMPEG4toH264AnnexB(inFilename, outFilename):
     # print("Finished subproc for ffmpeg")
     # out, err = proc.communicate()
 
-def processAfile(filename, noRedos = True):
-    width = 1280
-    height = 720
+def processAfile(filename, width=1280, height=720, noRedos = True):
     baseFileName, ext = os.path.splitext(filename)
     traceFileName = "{}_trace.txt".format(baseFileName)
     print("The extension is {}".format(ext))
@@ -574,8 +576,6 @@ if __name__ == "__main__":
                 QPPixels = scaleToVisualise(QPPixels, width/16, height/16, width, height, visible=True)
                 if doResize: QPPixels = cv2.resize(QPPixels, (maxDisplayWidth, maxDisplayHeight))
                 cv2.imshow('QP', QPPixels)
-
-
             if showMV:
                 #np.set_printoptions(threshold=np.nan)
                 offEnd, MVPixelsX, MVPixelsY = getBGRFramesFromMVsFile(MVfilename, width/4, height/4, frameNo, False, channels=2)
