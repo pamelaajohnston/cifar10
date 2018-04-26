@@ -54,8 +54,9 @@ def splitTraceFileIntoComponentFiles(filename, width, height):
     YUVfilename = "{}.yuv".format(basefilename)
     maybeYUVfilename = "{}_ViewID0000.yuv".format(basefilename)
     if os.path.isfile(maybeYUVfilename):
-        print("renaming...")
-        os.rename(maybeYUVfilename, YUVfilename)
+        print("removing...")
+        os.remove(maybeYUVfilename)
+        #os.rename(maybeYUVfilename, YUVfilename)
     maybeYUVfilename = "{}_ViewID0001.yuv".format(basefilename)
     if os.path.isfile(maybeYUVfilename):
         os.remove(maybeYUVfilename)
@@ -94,6 +95,7 @@ def splitTraceFileIntoComponentFiles(filename, width, height):
     mvs = np.swapaxes(mvs, 1, 2)
     mvs = mvs.flatten() + 128
     functions.saveToFile(mvs, MVfilename)
+    return width, height, frames
 
 def extractPixelPatch(filename, frameNo, mbNo, frameW, frameH, channels=1.5, patchW=16, patchH=16, xstride=16, ystride=16, lborder=8, rborder=8, tborder=8, bborder=8):
     frameSize = int(frameW * frameH * channels)
@@ -174,6 +176,7 @@ def extractPatchesAndReturn(fileName, frameNo, frameW, frameH, channels=1.5, pat
         patchV = vData[yCo:(yCo + patchH), xCo:(xCo + patchW)]
 
         #print("patch dims: y {} u {} v {}".format(patchY.shape, patchU.shape, patchV.shape))
+        # Note the division by zero!!!
         yuv = np.concatenate((np.divide(patchY.flatten(), 8), np.divide(patchU.flatten(), 8), np.divide(patchV.flatten(), 8)), axis=0)
         #print("patch dims: {}".format(yuv.shape))
         yuv = yuv.flatten()
@@ -193,13 +196,90 @@ def extractPatchesAndReturn(fileName, frameNo, frameW, frameH, channels=1.5, pat
     #np.random.shuffle(patches_array)
     return patches_array
 
-if __name__ == "__main__":
+def extractPatchesAndReturnWholeFile(fileName, frameW, frameH, channels=1.5, patchW=32, patchH=32, xstride=16, ystride=16, lborder=8, rborder=8, tborder=8, bborder=8):
+    patchesList = []
+    numPatches = 0
+    frameSize = int(frameW * frameH * channels)
 
-    #encodeYUV.encodeAWholeFolderAsH264("/Users/pam/Documents/data/h264/", takeAll=True)
+    mbwidth = int(width/16)
+    mbheight = int(height/16)
+    mbsize = mbwidth*mbheight
+    with open(fileName, "rb") as f:
+        pixels = f.read()
+        allpixels = bytearray(pixels)
+
+    bytePos = 0
+    print("We have {} pixels in total".format(len(allpixels)))
+    while bytePos < len(allpixels):
+        print("Frame: {}".format(bytePos//frameSize))
+        print("The byte position in the yuv file {}: {}".format(fileName, bytePos))
+        nextBytePos = (bytePos + frameSize)
+
+        # Adding the border to the frame saves us worrying about testing borders during patch-ification
+        pixels = allpixels[bytePos:nextBytePos]
+        frame444 = functions.YUV420_2_YUV444(pixels, height, width)
+        frame444, newWidth, newHeight = encodeYUV.addABorder(frame444, width, height, lborder, rborder, tborder, bborder)
+
+        frameData = frame444
+        ySize = newWidth * newHeight
+        uvSize = newWidth * newHeight
+        frameData = frame444
+        yData = frameData[0:ySize]
+        uData = frameData[ySize:(ySize + uvSize)]
+        vData = frameData[(ySize + uvSize):(ySize + uvSize + uvSize)]
+        yData = yData.reshape(newHeight, newWidth)
+        uData = uData.reshape(newHeight, newWidth)
+        vData = vData.reshape(newHeight, newWidth)
+        pixelSample = 0
+        xCo = 0
+        yCo = 0
+        maxPixelSample = ((height-patchH) * width) + (width-patchW)
+        #print("maxPixelSample: {}".format(maxPixelSample))
+        #print("newHeight: {} and {}".format(newHeight, (1 + newHeight - patchH)))
+        while yCo < (1 + newHeight - patchH):
+            #print("Taking sample from: ({}, {})".format(xCo, yCo))
+            patchY = yData[yCo:(yCo + patchH), xCo:(xCo + patchW)]
+            patchU = uData[yCo:(yCo + patchH), xCo:(xCo + patchW)]
+            patchV = vData[yCo:(yCo + patchH), xCo:(xCo + patchW)]
+
+            #print("patch dims: y {} u {} v {}".format(patchY.shape, patchU.shape, patchV.shape))
+            yuv = np.concatenate((np.divide(patchY.flatten(), 8), np.divide(patchU.flatten(), 8), np.divide(patchV.flatten(), 8)), axis=0)
+            #print("patch dims: {}".format(yuv.shape))
+            yuv = yuv.flatten()
+            patchesList.append(yuv)
+            numPatches = numPatches + 1
+
+
+            xCo = xCo + xstride
+            if xCo > (1 + newWidth - patchW):
+                xCo = 0
+                yCo = yCo + ystride
+            #print("numPatches: {}".format(numPatches))
+            #print(yCo)
+        bytePos += frameSize
+
+
+    patches_array = np.array(patchesList)
+    #np.random.shuffle(patches_array)
+    return patches_array
+
+if __name__ == "__main__":
+    encodeEm = True
+    YUVsourceFolder = "/Users/pam/Documents/data/h264/YUV_test"
+    encodedFolderI = "/Users/pam/Documents/data/h264/encoded/intra"
+    encodedFolderP = "/Users/pam/Documents/data/h264/encoded/non-intra"
+
+    YUVsourceFolder = "/Volumes/LaCie/data/yuv/qcif"
+    encodedFolderI = "/Volumes/LaCie/data/YUV_Patches/IP/intra"
+    encodedFolderP = "/Volumes/LaCie/data/YUV_Patches/IP/non-intra"
+
+    if encodeEm:
+        encodeYUV.encodeAWholeFolderAsH264(YUVsourceFolder, takeAll=True, intraOnly=False, encodedFolder=encodedFolderP)
+        encodeYUV.encodeAWholeFolderAsH264(YUVsourceFolder, takeAll=True, intraOnly=True, encodedFolder=encodedFolderI)
     #quit()
     dataDir = "/Users/pam/Documents/data/h264/"
-    intraDir = "/Users/pam/Documents/data/h264/intra"
-    nonintraDir = "/Users/pam/Documents/data/h264/intra_not"
+    intraDir = encodedFolderI
+    nonintraDir = encodedFolderP
 
     outputDir = "{}patches/".format(dataDir)
     if not os.path.exists(outputDir):
@@ -212,26 +292,29 @@ if __name__ == "__main__":
     #filenames = showBitstreamInfo.createFileList(nonintraDir, takeAll = False, format='.h264', desiredNamePart = '720', shuffle=False)
 
     #The intersection of the lists
-    for filename1 in filenames_Is:
-        head, tail = os.path.split(filename1)
-        foundIt = False
-        for filename2 in filenames_IPs:
-            if tail in filename2:
-                foundIt = True
-        if not foundIt:
-            filenames_Is.remove(filename1)
+    doIntersection = True
+    if doIntersection:
+        for filename1 in filenames_Is:
+            head, tail = os.path.split(filename1)
+            foundIt = False
+            for filename2 in filenames_IPs:
+                if tail in filename2:
+                    foundIt = True
+            if not foundIt:
+                filenames_Is.remove(filename1)
 
-    for filename1 in filenames_IPs:
-        head, tail = os.path.split(filename1)
-        foundIt = False
-        for filename2 in filenames_Is:
-            if tail in filename2:
-                foundIt = True
-        if not foundIt:
-            filenames_IPs.remove(filename1)
+        for filename1 in filenames_IPs:
+            head, tail = os.path.split(filename1)
+            foundIt = False
+            for filename2 in filenames_Is:
+                if tail in filename2:
+                    foundIt = True
+            if not foundIt:
+                filenames_IPs.remove(filename1)
 
+    print("The Intra files: ")
     print(filenames_Is)
-    print("and")
+    print("The Non-intra files: ")
     print(filenames_IPs)
 
     for filename in filenames_IPs:
@@ -242,8 +325,10 @@ if __name__ == "__main__":
         print(nonintraFilename)
         basefilename, ext = os.path.splitext(filename)
         f, width, height = encodeYUV.getFile_Name_Width_Height(basefilename)
-        splitTraceFileIntoComponentFiles(intraFilename, width, height)
-        splitTraceFileIntoComponentFiles(nonintraFilename, width, height)
+        w1, h1, f1 = splitTraceFileIntoComponentFiles(intraFilename, width, height)
+        w2, h2, f2 = splitTraceFileIntoComponentFiles(nonintraFilename, width, height)
+        print("W: {}, H: {} F: {}".format(w1, h1, f1))
+        print("W: {}, H: {} F: {}".format(w2, h2, f2))
 
 
         #filename = "/Users/pam/Documents/data/h264/carphone_qcif_q0.h264"
@@ -270,38 +355,58 @@ if __name__ == "__main__":
         numPatches = 0
         firstFrame = 2 # Don't want to start at 0
         firstMB = firstFrame * mbframeSize
-        patches_intra = extractPatchesAndReturn(intraFilename, firstFrame, width, height)
-        patches_nonintra = extractPatchesAndReturn(nonintraFilename, firstFrame, width, height)
+        nonintraYUVfilename = "{}.yuv".format(basefilename)
+        relFilename = os.path.relpath(nonintraYUVfilename, nonintraDir)
+        intraYUVfilename = os.path.join(intraDir, relFilename)
+
+        #patches_intra = extractPatchesAndReturn(intraFilename, firstFrame, width, height)
+        #patches_nonintra = extractPatchesAndReturn(nonintraFilename, firstFrame, width, height)
         currentFrameNo = 2
-        print(patches_nonintra.shape)
+        #print(patches_nonintra.shape)
 
-        for _idx, mbMode in enumerate(mbModes[firstMB:]):
-            idx = _idx + firstMB
-            print("Mb idx: {}, value: {}".format(idx, mbMode))
-            mbNo = idx % mbframeSize
-            frameNo = int((idx-mbNo) / mbframeSize)
-            print("frameNo: {} vs currentFrameNo: {}".format(frameNo, currentFrameNo))
-            if frameNo != currentFrameNo:
-                patches_intra = extractPatchesAndReturn(intraFilename, frameNo, width, height)
-                patches_nonintra = extractPatchesAndReturn(nonintraFilename, frameNo, width, height)
-                currentFrameNo = frameNo
+        totalMBs = mbframeSize * f1
+        # Take 5% of macroblocks in each sequence
+        numPatchesToTake = int((totalMBs*2)//20)
+        frameNo = 2
+        minMbNo = mbwidth + 2
+        maxMbNo = mbwidth + mbwidth
+        frameInc = 30
+        mbInc = int(mbframeSize//10)
+        #if mbInc < 10:
+        #    mbInc = 10
+        print(mbInc)
 
+        #patches_intra = extractPatchesAndReturnWholeFile(intraYUVfilename, width, height)
+        #patches_nonintra = extractPatchesAndReturnWholeFile(nonintraYUVfilename, width, height)
+        while frameNo < f1:
+            # choose a random frame???
+            mbNo = random.randint(minMbNo, maxMbNo)  # the a complete macroblock avoiding the border
+            patches_intra = extractPatchesAndReturn(intraYUVfilename, frameNo, width, height)
+            patches_nonintra = extractPatchesAndReturn(nonintraYUVfilename, frameNo, width, height)
 
-            label = mbMode
-            # The intra patches will come from the intra files, so only look for inter patches
-            if label != 1:
-                yuv = patches_nonintra[mbNo]
-                datayuv = np.concatenate((np.array([label]), yuv), axis=0)
-                datayuv = datayuv.flatten()
-                patchesList.append(datayuv)
-                numPatches = numPatches + 1
+            while mbNo < (mbframeSize-mbwidth):
+                mbidx = (mbframeSize * frameNo) + mbNo
+                label = mbModes[mbidx]
+                # The intra patches will come from the intra files, so only look for inter patches
+                if label == 1:
+                    print("Taking MB: {}".format(mbNo))
+                    yuv = patches_nonintra[mbNo]
+                    datayuv = np.concatenate((np.array([label]), yuv), axis=0)
+                    datayuv = datayuv.flatten()
+                    patchesList.append(datayuv)
+                    numPatches = numPatches + 1
 
-                intralabel = 0
-                yuv = patches_intra[mbNo]
-                datayuv = np.concatenate((np.array([intralabel]), yuv), axis=0)
-                datayuv = datayuv.flatten()
-                patchesList.append(datayuv)
-                numPatches = numPatches + 1
+                    intralabel = 0
+                    yuv = patches_intra[mbNo]
+                    datayuv = np.concatenate((np.array([intralabel]), yuv), axis=0)
+                    datayuv = datayuv.flatten()
+                    patchesList.append(datayuv)
+                    numPatches = numPatches + 1
+
+                mbNo += mbInc
+                if ((mbNo%mbwidth) == 0) or ((mbNo%mbwidth) == (mbwidth-1)):
+                    mbNo += 2
+            frameNo += frameInc
 
         patches_array = np.array(patchesList)
         print("Dims: {}, numPatches {}".format(patches_array.shape, numPatches))

@@ -78,7 +78,7 @@ def createFileList(myDir, takeAll = False, format='.yuv'):
     return fileList
 
 
-def encodeAWholeFolderAsH264(myDir, takeAll=False, intraOnly=False, deblock=False):
+def encodeAWholeFolderAsH264(myDir, takeAll=False, intraOnly=False, deblock=False, encodedFolder=""):
     fileList = createFileList(myDir, takeAll=takeAll)
     print("The file list:")
     print(fileList)
@@ -87,8 +87,9 @@ def encodeAWholeFolderAsH264(myDir, takeAll=False, intraOnly=False, deblock=Fals
         # make a directory
         dirName = "quant_{}".format(quant)
         dirName = os.path.join(myDir, dirName)
-        if not os.path.exists(dirName):
-            os.makedirs(dirName)
+        if encodedFolder=="":
+            if not os.path.exists(dirName):
+                os.makedirs(dirName)
 
         for entry in fileList:
             filename = entry[0]
@@ -101,7 +102,17 @@ def encodeAWholeFolderAsH264(myDir, takeAll=False, intraOnly=False, deblock=Fals
             height = entry[2]
             print("width: {} height: {} filename:{}".format(entry[1], entry[2], entry[0]))
             h264Filename = "{}_q{}.h264".format(baseFileName, quant)
+            #compYuvFilename = "{}_q{}_intra{}.yuv".format(baseFileName, quant)
             compYuvFilename = "{}_q{}.yuv".format(baseFileName, quant)
+            if encodedFolder != "":
+                print("Storing in {}".format(encodedFolder))
+                d, n = os.path.split(filename)
+                n, e = os.path.splitext(n)
+                h264Filename = "{}_q{}.h264".format(n, quant)
+                h264Filename =  os.path.join(encodedFolder, h264Filename)
+                compYuvFilename = "{}_q{}.yuv".format(n, quant)
+                compYuvFilename = os.path.join(encodedFolder, compYuvFilename)
+            #Do the compression
             isize, psize, bsize = functions.compressFile(x264, filename, width, height, quant, h264Filename, compYuvFilename, intraOnly=intraOnly, deblock=deblock)
 
 
